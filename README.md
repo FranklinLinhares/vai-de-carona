@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Vai de carona
 
-## Getting Started
+Carona urbana que funciona como linha de ônibus, começando por João Pessoa. O motorista publica a rota que já vai fazer, e o passageiro embarca num ponto dessa rota (uma rua ou parada de ônibus) pagando o preço da passagem.
 
-First, run the development server:
+## Regras do MVP
+
+- O motorista não sai da rota. O passageiro anda até **500 m** para embarcar e desembarcar.
+- O app sugere uma parada de ônibus que fica na rota, quando há uma.
+- O passageiro chega 3 min antes, e o motorista espera no máximo 2 min.
+- A tarifa é fixa (R$ 5 por padrão, `NEXT_PUBLIC_TARIFA`) e o pagamento é por Pix direto ao motorista.
+- Segurança: cadastro com foto, CPF e celular, motorista com CNH e placa, avaliação mútua (suspensão automática com média abaixo de 3 após 3 avaliações), compartilhar a viagem e botão 190.
+
+## Tecnologia
+
+- Next.js 15 (App Router), instalável no celular como PWA
+- Supabase: login por código no e-mail, Postgres + PostGIS para cruzar rotas e pontos, Storage para fotos, Realtime
+- Mapa: Leaflet + OpenStreetMap. Rotas pelo OSRM, endereços pelo Nominatim e paradas pelo Overpass. Os servidores públicos servem para testes. Em produção, use servidores próprios ou pagos (variáveis em `.env.example`).
+
+## Rodar localmente
 
 ```bash
+cp .env.example .env.local   # preencha URL e chave do Supabase
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+O banco fica em `supabase/migrations/`. As funções principais são `buscar_viagens` (rotas que passam perto da origem e do destino, no sentido certo), `reservar` (recalcula o ponto no servidor e controla as vagas) e `publicar_viagem`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Telas
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Rota | O que faz |
+| --- | --- |
+| `/` | Início e como funciona |
+| `/entrar` | Login com código por e-mail |
+| `/perfil` | Cadastro do passageiro e, opcionalmente, do motorista |
+| `/motorista/nova` | Publicar viagem: origem, destino, rota, horário e vagas |
+| `/motorista` | Viagens do motorista, passageiros e pontos de embarque, iniciar e concluir |
+| `/carona` | Buscar caronas que passam perto, ver o ponto de embarque e reservar |
+| `/minhas-caronas` | Reservas, Pix, compartilhar viagem, 190 e avaliação |

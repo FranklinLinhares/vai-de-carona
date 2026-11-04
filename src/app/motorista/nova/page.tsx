@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Protegido from "@/components/Protegido";
 import BuscaLocal from "@/components/BuscaLocal";
 import Mapa from "@/components/Mapa";
-import { tracarRota, formatarReais, nomeDoLocal, type Local, type Rota } from "@/lib/geo";
-import MarcarNoMapa from "@/components/MarcarNoMapa";
+import { tracarRota, formatarReais, nomeDoLocal, pontoNaRota, type Local, type Rota } from "@/lib/geo";
+import MarcarNoMapa, { type Modo } from "@/components/MarcarNoMapa";
 import { REGRAS } from "@/lib/config";
 import { supabase, mensagemErro } from "@/lib/supabase";
 import { useSessao } from "@/components/Sessao";
@@ -31,6 +31,13 @@ function Formulario() {
   const { perfil } = useSessao();
   const [soMulheres, setSoMulheres] = useState(false);
   const [repetir, setRepetir] = useState(false);
+  const [paradas, setParadas] = useState<Local[]>([]);
+  const [grupos, setGrupos] = useState<{ id: string; nome: string }[]>([]);
+  const [grupoId, setGrupoId] = useState("");
+
+  useEffect(() => {
+    supabase.from("grupos").select("id,nome").order("nome").then(({ data }) => setGrupos(data ?? []));
+  }, []);
   const [dias, setDias] = useState<number[]>([1, 2, 3, 4, 5]);
   const [origem, setOrigem] = useState<Local | null>(null);
   const [destino, setDestino] = useState<Local | null>(null);
@@ -39,11 +46,21 @@ function Formulario() {
   const [vagas, setVagas] = useState(3);
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
-  const [marcando, setMarcando] = useState<"origem" | "destino" | null>(null);
+  const [marcando, setMarcando] = useState<Modo | null>(null);
 
   async function tocarMapa(lat: number, lng: number) {
     if (!marcando) return;
     const qual = marcando;
+    if (qual === "parada") {
+      if (!rota) return;
+      if (paradas.length >= 5) return setErro("No máximo 5 paradas.");
+      const p = pontoNaRota({ lat, lng }, rota.coordenadas);
+      if (p.distancia > 150) return setErro("Toque mais perto da rota para marcar a parada.");
+      setErro("");
+      const nome = await nomeDoLocal(p.lat, p.lng);
+      setParadas((ps) => [...ps, { nome, lat: p.lat, lng: p.lng }]);
+      return; // continua no modo parada para marcar outras
+    }
     setMarcando(null);
     const local = { nome: await nomeDoLocal(lat, lng), lat, lng };
     if (qual === "origem") { setOrigem(local); calcular(local, destino); }
@@ -52,6 +69,7 @@ function Formulario() {
 
   async function calcular(o: Local | null, d: Local | null) {
     setRota(null);
+    setParadas([]);
     setErro("");
     if (!o || !d) return;
     setOcupado(true);
@@ -75,7 +93,7 @@ function Formulario() {
         setOcupado(false);
         return setErro("Escolha pelo menos um dia da semana.");
       }
-      const { error: erroSerie } = await supabase.rpc("criar_serie", {
+      const { data: serieId, error: erroSerie } = await supabase.rpc("criar_serie", {
         p_origem_nome: origem.nome,
         p_destino_nome: destino.nome,
         p_rota_geojson: { type: "LineString", coordinates: rota.coordenadas },
@@ -87,6 +105,9 @@ function Formulario() {
         p_tarifa: REGRAS.tarifa,
         p_so_mulheres: soMulheres,
       });
+      if (!erroSerie && (paradas.length || grupoId)) {
+        await supabase.rpc("configurar_serie", { p_serie: serieId, p_paradas: paradas.length ? paradas : null, p_grupo: grupoId || null });
+      }
       setOcupado(false);
       if (erroSerie) return setErro(mensagemErro(erroSerie));
       return router.push("/motorista");
@@ -101,13 +122,23 @@ function Formulario() {
       p_vagas: vagas,
       p_tarifa: REGRAS.tarifa,
     });
-    if (!error && soMulheres) await supabase.from("viagens").update({ so_mulheres: true }).eq("id", novaId as string);
+    if (!error && (soMulheres || paradas.length || grupoId)) {
+      const { error: e2 } = await supabase
+        .from("viagens")
+        .update({ so_mulheres: soMulheres, paradas: paradas.length ? paradas : null, grupo_id: grupoId || null })
+        .eq("id", novaId as string);
+      if (e2) {
+        setOcupado(false);
+        return setErro(mensagemErro(e2));
+      }
+    }
     setOcupado(false);
     if (error) return setErro(mensagemErro(error));
     router.push("/motorista");
   }
 
   const marcadores = [
+    ...paradas.map((p, i) => ({ ...p, cor: "#2563eb", rotulo: `🚏 ${i + 1}` })),
     ...(origem ? [{ ...origem, cor: "#0f766e", rotulo: "Saída" }] : []),
     ...(destino ? [{ ...destino, cor: "#b91c1c", rotulo: "Destino" }] : []),
   ];
@@ -120,7 +151,11 @@ function Formulario() {
         <BuscaLocal rotulo="Indo para" valor={destino} onEscolher={(l) => { setDestino(l); calcular(origem, l); }} />
       </div>
 
-      <MarcarNoMapa marcando={marcando} onMudar={setMarcando} rotulos={{ origem: "Saída", destino: "Destino" }} />
+      <MarcarNoMapa
+        marcando={marcando}
+        onMudar={setMarcando}
+        rotulos={rota ? { origem: "Saída", destino: "Destino", parada: "+ Parada" } : { origem: "Saída", destino: "Destino" }}
+      />
       <Mapa rotas={rota ? [{ coordenadas: rota.coordenadas }] : []} marcadores={marcadores} onClique={tocarMapa} />
       {ocupado && !rota && <p className="text-sm text-slate-500">Traçando a rota…</p>}
       {rota && (
@@ -185,6 +220,35 @@ function Formulario() {
         </div>
       </div>
 
+      {rota && (
+        <div className="cartao space-y-2 text-sm">
+          <p className="font-medium">🚏 Paradas (opcional)</p>
+          <p className="text-xs text-slate-600">
+            Marque de 2 a 5 pontos na rota onde você pode parar, como paradas de ônibus. Os passageiros escolhem um deles. Sem paradas, o
+            app sugere o ponto da rota mais perto de cada passageiro.
+          </p>
+          {paradas.map((p, i) => (
+            <div key={i} className="flex items-center justify-between rounded-lg bg-slate-50 px-2 py-1">
+              <span>{i + 1}. {p.nome}</span>
+              <button className="text-xs text-red-600" onClick={() => setParadas(paradas.filter((_, j) => j !== i))}>Remover</button>
+            </div>
+          ))}
+          <button type="button" className="botao-secundario" onClick={() => setMarcando(marcando === "parada" ? null : "parada")}>
+            {marcando === "parada" ? "Concluir paradas" : "Marcar paradas no mapa"}
+          </button>
+        </div>
+      )}
+      {grupos.length > 0 && (
+        <div className="cartao text-sm">
+          <label className="mb-1 block font-medium">Quem pode ver esta carona</label>
+          <select className="campo" value={grupoId} onChange={(e) => setGrupoId(e.target.value)}>
+            <option value="">Todos</option>
+            {grupos.map((g) => (
+              <option key={g.id} value={g.id}>Só o grupo {g.nome}</option>
+            ))}
+          </select>
+        </div>
+      )}
       {perfil?.genero === "feminino" && (
         <label className="cartao flex items-center gap-2 text-sm">
           <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={soMulheres} onChange={(e) => setSoMulheres(e.target.checked)} />

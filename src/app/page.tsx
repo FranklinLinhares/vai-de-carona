@@ -35,6 +35,14 @@ export default function Inicio() {
         </Link>
       </div>
 
+      <Link href="/grupos" className="cartao mt-3 flex items-center gap-4 hover:border-teal-600">
+        <span className="text-3xl">👥</span>
+        <span>
+          <span className="block font-semibold">Grupos</span>
+          <span className="text-sm text-slate-600">Carona só entre colegas da empresa, faculdade ou condomínio.</span>
+        </span>
+      </Link>
+
       <section className="cartao mt-4">
         <h2 className="font-semibold">Como funciona</h2>
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-700">

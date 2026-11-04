@@ -1,18 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Protegido from "@/components/Protegido";
 import BuscaLocal from "@/components/BuscaLocal";
 import Mapa from "@/components/Mapa";
 import { Nota } from "@/components/Estrelas";
 import { supabase, mensagemErro, type Resultado, type ViagemDetalhe } from "@/lib/supabase";
-import { formatarHora, formatarReais, sugerirParada, nomeDoLocal, type Local, type Parada } from "@/lib/geo";
-import MarcarNoMapa from "@/components/MarcarNoMapa";
+import { formatarHora, formatarReais, sugerirParada, nomeDoLocal, distanciaM, type Local, type Parada } from "@/lib/geo";
+import MarcarNoMapa, { type Modo } from "@/components/MarcarNoMapa";
 import { useSessao } from "@/components/Sessao";
 import { REGRAS } from "@/lib/config";
 
-type Extra = Resultado & { so_mulheres?: boolean; recorrente?: boolean };
+type ParadaViagem = { nome: string; lat: number; lng: number };
+type Extra = Resultado & {
+  so_mulheres?: boolean;
+  recorrente?: boolean;
+  grupo_nome?: string | null;
+  paradas_ok?: (ParadaViagem & { caminhada: number })[]; // paradas do motorista ao alcance, mais perto primeiro
+};
 
 export default function PegarCarona() {
   return (
@@ -37,7 +43,13 @@ function Busca() {
   const [parada, setParada] = useState<Parada | null>(null);
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
-  const [marcando, setMarcando] = useState<"origem" | "destino" | null>(null);
+  const [marcando, setMarcando] = useState<Modo | null>(null);
+  const [meusGrupos, setMeusGrupos] = useState<{ id: string; nome: string }[]>([]);
+  const [filtroGrupo, setFiltroGrupo] = useState("");
+
+  useEffect(() => {
+    supabase.from("grupos").select("id,nome").order("nome").then(({ data }) => setMeusGrupos(data ?? []));
+  }, []);
 
   async function tocarMapa(lat: number, lng: number) {
     if (!marcando) return;
@@ -71,13 +83,30 @@ function Busca() {
       // genero das motoristas e viagens so para mulheres
       const [{ data: ps }, { data: vs }] = await Promise.all([
         supabase.from("perfis").select("id,genero").in("id", [...new Set(lista.map((r) => r.motorista_id))]),
-        supabase.from("viagens").select("id,so_mulheres,serie_id").in("id", lista.map((r) => r.viagem_id)),
+        supabase.from("viagens").select("id,so_mulheres,serie_id,grupo_id,paradas").in("id", lista.map((r) => r.viagem_id)),
       ]);
       const genero = Object.fromEntries((ps ?? []).map((p) => [p.id, p.genero]));
       const soElas = new Set((vs ?? []).filter((v) => v.so_mulheres).map((v) => v.id));
       const recorrentes = new Set((vs ?? []).filter((v) => v.serie_id).map((v) => v.id));
       const souMulher = perfil?.genero === "feminino";
+      const infoViagem = Object.fromEntries((vs ?? []).map((v) => [v.id, v]));
+      const nomeGrupo = Object.fromEntries(meusGrupos.map((g) => [g.id, g.nome]));
       lista = lista
+        // caronas de grupo: so para membros; filtro opcional por um grupo
+        .filter((r) => !infoViagem[r.viagem_id]?.grupo_id || nomeGrupo[infoViagem[r.viagem_id].grupo_id])
+        .filter((r) => !filtroGrupo || infoViagem[r.viagem_id]?.grupo_id === filtroGrupo)
+        // paradas do motorista: precisa haver uma ao alcance a pe
+        .map((r) => {
+          const ps = (infoViagem[r.viagem_id]?.paradas as ParadaViagem[] | null) ?? null;
+          if (!ps?.length) return r;
+          const ok = ps
+            .map((p) => ({ ...p, caminhada: Math.round(distanciaM(p, origem)) }))
+            .filter((p) => p.caminhada <= REGRAS.raioCaminhadaM)
+            .sort((a, b) => a.caminhada - b.caminhada);
+          return { ...r, paradas_ok: ok, caminhada_embarque_m: ok[0]?.caminhada ?? Infinity } as Extra;
+        })
+        .filter((r) => (r as Extra).paradas_ok === undefined || (r as Extra).paradas_ok!.length > 0)
+        .map((r) => ({ ...r, grupo_nome: nomeGrupo[infoViagem[r.viagem_id]?.grupo_id] ?? null }))
         .filter((r) => souMulher || !soElas.has(r.viagem_id))
         .filter((r) => !soMulheres || genero[r.motorista_id] === "feminino")
         .map((r) => ({ ...r, so_mulheres: soElas.has(r.viagem_id), recorrente: recorrentes.has(r.viagem_id) }));
@@ -93,6 +122,11 @@ function Busca() {
     const { data } = await supabase.from("viagens_detalhe").select("rota_geojson").eq("id", r.viagem_id).single();
     const coords = (data as Pick<ViagemDetalhe, "rota_geojson"> | null)?.rota_geojson.coordinates ?? null;
     setRota(coords);
+    const ps = (r as Extra).paradas_ok;
+    if (ps?.length) {
+      setParada(ps[0]);
+      return;
+    }
     if (coords && origem) {
       setParada(await sugerirParada({ lat: r.embarque_lat, lng: r.embarque_lng }, origem, coords, REGRAS.raioCaminhadaM));
     }
@@ -146,6 +180,17 @@ function Busca() {
             <option value={12}>12 horas</option>
           </select>
         </div>
+        {meusGrupos.length > 0 && (
+          <div>
+            <label className="mb-1 block text-sm font-medium">Mostrar caronas</label>
+            <select className="campo" value={filtroGrupo} onChange={(e) => setFiltroGrupo(e.target.value)}>
+              <option value="">De todos</option>
+              {meusGrupos.map((g) => (
+                <option key={g.id} value={g.id}>Só do grupo {g.nome}</option>
+              ))}
+            </select>
+          </div>
+        )}
         {perfil?.genero === "feminino" && (
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={soMulheres} onChange={(e) => setSoMulheres(e.target.checked)} />
@@ -182,6 +227,12 @@ function Busca() {
               {r.vagas_livres} {r.vagas_livres === 1 ? "lugar" : "lugares"}
             </p>
             <p className="text-xs text-slate-500">Rota: {r.origem_nome} → {r.destino_nome}</p>
+            {(r as Extra).grupo_nome && (
+              <span className="mr-1 mt-1 inline-block rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-800">👥 {(r as Extra).grupo_nome}</span>
+            )}
+            {(r as Extra).paradas_ok && (
+              <span className="mr-1 mt-1 inline-block rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-800">🚏 Paradas do motorista</span>
+            )}
             {(r as Extra).recorrente && (
               <span className="mr-1 mt-1 inline-block rounded-full bg-teal-50 px-2 py-0.5 text-xs text-teal-800">🔁 Repete toda semana</span>
             )}
@@ -205,6 +256,23 @@ function Busca() {
                 {parada ? <>Espere na <strong>{parada.nome}</strong>, que fica na rota do motorista.</> : <>Espere na rua marcada no mapa, que fica na rota do motorista.</>}{" "}
                 Chegue {REGRAS.folgaChegadaMin} min antes: o motorista espera no máximo {REGRAS.toleranciaEsperaMin} min.
               </p>
+              {((r as Extra).paradas_ok?.length ?? 0) > 1 && (
+                <div className="space-y-1 text-sm">
+                  <p className="font-medium">Escolha onde embarcar:</p>
+                  {(r as Extra).paradas_ok!.map((p) => (
+                    <label key={`${p.lat},${p.lng}`} className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name={`parada-${r.viagem_id}`}
+                        className="accent-teal-700"
+                        checked={parada?.lat === p.lat && parada?.lng === p.lng}
+                        onChange={() => setParada(p)}
+                      />
+                      🚏 {p.nome} <span className="text-xs text-slate-500">({p.caminhada} m a pé)</span>
+                    </label>
+                  ))}
+                </div>
+              )}
               {(r as Extra).recorrente && !enviado && (
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={semanal} onChange={(e) => setSemanal(e.target.checked)} />

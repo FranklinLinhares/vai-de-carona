@@ -38,6 +38,8 @@ export type ViagemDetalhe = {
   rota_geojson: { type: "LineString"; coordinates: [number, number][] };
   so_mulheres: boolean;
   serie_id: string | null;
+  paradas: { nome: string; lat: number; lng: number }[] | null;
+  grupo_id: string | null;
 };
 
 export type ReservaDetalhe = {

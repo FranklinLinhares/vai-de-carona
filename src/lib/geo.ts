@@ -171,3 +171,21 @@ export function formatarReais(v: number) {
 export function linkMapa(lat: number, lng: number) {
   return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=18/${lat}/${lng}`;
 }
+
+/** Ponto da rota mais proximo de p (para "grudar" paradas na rota). */
+export function pontoNaRota(p: { lat: number; lng: number }, rota: [number, number][]) {
+  const kx = 111320 * Math.cos((p.lat * Math.PI) / 180);
+  const ky = 110540;
+  let melhor = { lat: p.lat, lng: p.lng, d: Infinity };
+  for (let i = 0; i < rota.length - 1; i++) {
+    const ax = (rota[i][0] - p.lng) * kx, ay = (rota[i][1] - p.lat) * ky;
+    const bx = (rota[i + 1][0] - p.lng) * kx, by = (rota[i + 1][1] - p.lat) * ky;
+    const dx = bx - ax, dy = by - ay;
+    const len = dx * dx + dy * dy;
+    const t = len ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len)) : 0;
+    const cx = ax + t * dx, cy = ay + t * dy;
+    const d = Math.hypot(cx, cy);
+    if (d < melhor.d) melhor = { lng: p.lng + cx / kx, lat: p.lat + cy / ky, d };
+  }
+  return { lat: melhor.lat, lng: melhor.lng, distancia: melhor.d };
+}

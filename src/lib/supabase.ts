@@ -37,6 +37,7 @@ export type ViagemDetalhe = {
   status: "aberta" | "em_andamento" | "concluida" | "cancelada";
   rota_geojson: { type: "LineString"; coordinates: [number, number][] };
   so_mulheres: boolean;
+  serie_id: string | null;
 };
 
 export type ReservaDetalhe = {
@@ -53,6 +54,7 @@ export type ReservaDetalhe = {
   desembarque_lng: number;
   desembarque_lat: number;
   aprovacao: "pendente" | "aceita" | "recusada";
+  recorrente_id: string | null;
 };
 
 export type Resultado = {

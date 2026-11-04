@@ -68,6 +68,13 @@ function Lista() {
     carregar();
   }
 
+  async function cancelarSemanal(recorrenteId: string) {
+    if (!confirm("Cancelar todas as próximas semanas desta carona?")) return;
+    const { error } = await supabase.rpc("cancelar_recorrencia", { p_recorrente: recorrenteId });
+    if (error) return setErro(mensagemErro(error));
+    carregar();
+  }
+
   async function compartilhar(i: Item) {
     const texto =
       `Estou indo de carona pelo Vai de carona.\n` +
@@ -121,6 +128,7 @@ function Lista() {
                 <p className="text-xs uppercase text-slate-500">{formatarData(i.embarque_previsto)}</p>
                 <p className="text-lg font-semibold">Embarque às {formatarHora(i.embarque_previsto)}</p>
                 <p className="text-sm text-slate-600">{i.embarque_nome ?? "Ponto na rota do motorista"}</p>
+                {i.recorrente_id && <p className="text-xs text-teal-700">🔁 Reserva semanal</p>}
               </div>
               <span className={`rounded-full px-2 py-1 text-xs ${s.cor}`}>{s.texto}</span>
             </div>
@@ -166,7 +174,10 @@ function Lista() {
                   <button className="botao-secundario flex-1" onClick={() => compartilhar(i)}>📤 Compartilhar viagem</button>
                   <a href={`tel:${REGRAS.emergencia}`} className="botao-perigo">🚨 {REGRAS.emergencia}</a>
                   {i.viagem.status === "aberta" && (
-                    <button className="botao-secundario" onClick={() => cancelar(i.id)}>Cancelar</button>
+                    <button className="botao-secundario" onClick={() => cancelar(i.id)}>{i.recorrente_id ? "Cancelar só este dia" : "Cancelar"}</button>
+                  )}
+                  {i.recorrente_id && (
+                    <button className="botao-secundario" onClick={() => cancelarSemanal(i.recorrente_id!)}>Cancelar todas as semanas</button>
                   )}
                 </div>
               </>

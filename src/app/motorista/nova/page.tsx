@@ -30,6 +30,8 @@ function Formulario() {
   const router = useRouter();
   const { perfil } = useSessao();
   const [soMulheres, setSoMulheres] = useState(false);
+  const [repetir, setRepetir] = useState(false);
+  const [dias, setDias] = useState<number[]>([1, 2, 3, 4, 5]);
   const [origem, setOrigem] = useState<Local | null>(null);
   const [destino, setDestino] = useState<Local | null>(null);
   const [rota, setRota] = useState<Rota | null>(null);
@@ -65,9 +67,30 @@ function Formulario() {
   async function publicar() {
     if (!origem || !destino || !rota) return;
     const quando = new Date(partida);
-    if (quando.getTime() < Date.now() - 5 * 60000) return setErro("O horário de saída já passou.");
+    if (!repetir && quando.getTime() < Date.now() - 5 * 60000) return setErro("O horário de saída já passou.");
     setOcupado(true);
     setErro("");
+    if (repetir) {
+      if (!dias.length) {
+        setOcupado(false);
+        return setErro("Escolha pelo menos um dia da semana.");
+      }
+      const { error: erroSerie } = await supabase.rpc("criar_serie", {
+        p_origem_nome: origem.nome,
+        p_destino_nome: destino.nome,
+        p_rota_geojson: { type: "LineString", coordinates: rota.coordenadas },
+        p_distancia_m: rota.distanciaM,
+        p_duracao_s: rota.duracaoS,
+        p_dias: dias,
+        p_hora: partida.slice(11, 16),
+        p_vagas: vagas,
+        p_tarifa: REGRAS.tarifa,
+        p_so_mulheres: soMulheres,
+      });
+      setOcupado(false);
+      if (erroSerie) return setErro(mensagemErro(erroSerie));
+      return router.push("/motorista");
+    }
     const { data: novaId, error } = await supabase.rpc("publicar_viagem", {
       p_origem_nome: origem.nome,
       p_destino_nome: destino.nome,
@@ -108,9 +131,46 @@ function Formulario() {
 
       <div className="cartao grid grid-cols-2 gap-3">
         <div className="col-span-2">
-          <label className="mb-1 block text-sm font-medium">Horário de saída</label>
-          <input type="datetime-local" className="campo" value={partida} onChange={(e) => setPartida(e.target.value)} />
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={repetir} onChange={(e) => setRepetir(e.target.checked)} />
+            🔁 Repetir toda semana
+          </label>
         </div>
+        {repetir ? (
+          <>
+            <div className="col-span-2">
+              <label className="mb-1 block text-sm font-medium">Dias</label>
+              <div className="flex gap-1">
+                {["D", "S", "T", "Q", "Q", "S", "S"].map((l, d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setDias(dias.includes(d) ? dias.filter((x) => x !== d) : [...dias, d].sort())}
+                    className={`h-10 flex-1 rounded-lg text-sm font-semibold ${dias.includes(d) ? "bg-teal-700 text-white" : "border border-slate-300 bg-white text-slate-600"}`}
+                    aria-label={["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"][d]}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="col-span-2">
+              <label className="mb-1 block text-sm font-medium">Horário de saída</label>
+              <input
+                type="time"
+                className="campo"
+                value={partida.slice(11, 16)}
+                onChange={(e) => setPartida(partida.slice(0, 11) + e.target.value)}
+              />
+              <p className="mt-1 text-xs text-slate-500">O app publica as viagens das próximas 2 semanas e renova sozinho todo dia.</p>
+            </div>
+          </>
+        ) : (
+          <div className="col-span-2">
+            <label className="mb-1 block text-sm font-medium">Horário de saída</label>
+            <input type="datetime-local" className="campo" value={partida} onChange={(e) => setPartida(e.target.value)} />
+          </div>
+        )}
         <div>
           <label className="mb-1 block text-sm font-medium">Lugares livres</label>
           <select className="campo" value={vagas} onChange={(e) => setVagas(Number(e.target.value))}>

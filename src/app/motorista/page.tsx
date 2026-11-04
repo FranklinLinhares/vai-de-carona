@@ -31,6 +31,7 @@ function Lista() {
   const [viagens, setViagens] = useState<ViagemDetalhe[]>([]);
   const [reservas, setReservas] = useState<Record<string, ReservaComPassageiro[]>>({});
   const [carregando, setCarregando] = useState(true);
+  const [series, setSeries] = useState<{ id: string; dias: number[]; hora: string; origem_nome: string; destino_nome: string }[]>([]);
   const [erro, setErro] = useState("");
 
   const carregar = useCallback(async () => {
@@ -43,6 +44,8 @@ function Lista() {
       .order("partida_em", { ascending: false });
     if (error) return setErro(mensagemErro(error));
     setViagens((vs as ViagemDetalhe[]) ?? []);
+    const { data: ss } = await supabase.from("series_viagem").select("id,dias,hora,origem_nome,destino_nome").eq("ativa", true);
+    setSeries(ss ?? []);
     const ids = (vs ?? []).map((v) => v.id);
     if (ids.length) {
       const { data: rs } = await supabase.from("reservas_detalhe").select("*").in("viagem_id", ids).neq("status", "cancelada");
@@ -76,6 +79,13 @@ function Lista() {
     carregar();
   }
 
+  async function encerrarSerie(id: string) {
+    if (!confirm("Encerrar esta carona recorrente? As próximas viagens serão canceladas e os passageiros avisados.")) return;
+    const { error } = await supabase.rpc("encerrar_serie", { p_serie: id });
+    if (error) return setErro(mensagemErro(error));
+    carregar();
+  }
+
   async function mudarStatus(id: string, status: ViagemDetalhe["status"]) {
     if (status === "cancelada" && !confirm("Cancelar esta viagem? Os passageiros serão avisados.")) return;
     const { error } = await supabase.from("viagens").update({ status }).eq("id", id);
@@ -90,6 +100,22 @@ function Lista() {
         <Link href="/motorista/nova" className="botao text-sm">+ Nova viagem</Link>
       </div>
       {erro && <p className="text-sm text-red-600">{erro}</p>}
+      {series.length > 0 && (
+        <section className="cartao space-y-2">
+          <h2 className="font-semibold">🔁 Caronas recorrentes</h2>
+          {series.map((s) => (
+            <div key={s.id} className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-2 text-sm">
+              <div>
+                <p className="font-medium">
+                  {s.dias.map((d) => ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"][d]).join(", ")} às {s.hora.slice(0, 5)}
+                </p>
+                <p className="text-xs text-slate-600">{s.origem_nome} → {s.destino_nome}</p>
+              </div>
+              <button className="botao-secundario text-xs" onClick={() => encerrarSerie(s.id)}>Encerrar</button>
+            </div>
+          ))}
+        </section>
+      )}
       {carregando && <p className="text-slate-500">Carregando…</p>}
       {!carregando && viagens.length === 0 && (
         <div className="cartao text-center text-slate-600">Você ainda não publicou viagens.</div>
@@ -113,6 +139,7 @@ function Lista() {
             />
             <p className="text-sm">
               {rs.length} de {v.vagas} lugares reservados · {formatarReais(v.tarifa)} por pessoa
+              {v.serie_id && <span className="ml-2 rounded-full bg-teal-50 px-2 py-0.5 text-xs text-teal-800">🔁 Recorrente</span>}
               {v.so_mulheres && <span className="ml-2 rounded-full bg-pink-100 px-2 py-0.5 text-xs text-pink-800">Só mulheres</span>}
             </p>
             {rs.length > 0 && (
@@ -125,7 +152,10 @@ function Lista() {
                         <img src={r.passageiro.foto_url} alt="" className="h-10 w-10 rounded-full object-cover" />
                       )}
                       <div className="flex-1">
-                        <p className="font-medium">{i + 1}. {r.passageiro?.nome}</p>
+                        <p className="font-medium">
+                          {i + 1}. {r.passageiro?.nome}
+                          {r.recorrente_id && <span className="ml-1 text-xs text-teal-700">🔁 toda semana</span>}
+                        </p>
                         <Nota nota={r.passageiro?.nota_media ?? null} total={r.passageiro?.total_avaliacoes ?? 0} />
                         <p className="text-slate-600">
                           Embarque às {formatarHora(r.embarque_previsto)}

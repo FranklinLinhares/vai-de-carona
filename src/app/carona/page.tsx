@@ -12,6 +12,8 @@ import MarcarNoMapa from "@/components/MarcarNoMapa";
 import { useSessao } from "@/components/Sessao";
 import { REGRAS } from "@/lib/config";
 
+type Extra = Resultado & { so_mulheres?: boolean; recorrente?: boolean };
+
 export default function PegarCarona() {
   return (
     <Protegido>
@@ -25,6 +27,7 @@ function Busca() {
   const { perfil } = useSessao();
   const [soMulheres, setSoMulheres] = useState(false);
   const [enviado, setEnviado] = useState(false);
+  const [semanal, setSemanal] = useState(false);
   const [origem, setOrigem] = useState<Local | null>(null);
   const [destino, setDestino] = useState<Local | null>(null);
   const [janela, setJanela] = useState(2);
@@ -68,15 +71,16 @@ function Busca() {
       // genero das motoristas e viagens so para mulheres
       const [{ data: ps }, { data: vs }] = await Promise.all([
         supabase.from("perfis").select("id,genero").in("id", [...new Set(lista.map((r) => r.motorista_id))]),
-        supabase.from("viagens").select("id,so_mulheres").in("id", lista.map((r) => r.viagem_id)),
+        supabase.from("viagens").select("id,so_mulheres,serie_id").in("id", lista.map((r) => r.viagem_id)),
       ]);
       const genero = Object.fromEntries((ps ?? []).map((p) => [p.id, p.genero]));
       const soElas = new Set((vs ?? []).filter((v) => v.so_mulheres).map((v) => v.id));
+      const recorrentes = new Set((vs ?? []).filter((v) => v.serie_id).map((v) => v.id));
       const souMulher = perfil?.genero === "feminino";
       lista = lista
         .filter((r) => souMulher || !soElas.has(r.viagem_id))
         .filter((r) => !soMulheres || genero[r.motorista_id] === "feminino")
-        .map((r) => ({ ...r, so_mulheres: soElas.has(r.viagem_id) }));
+        .map((r) => ({ ...r, so_mulheres: soElas.has(r.viagem_id), recorrente: recorrentes.has(r.viagem_id) }));
     }
     setOcupado(false);
     setResultados(lista);
@@ -98,7 +102,7 @@ function Busca() {
     if (!origem || !destino) return;
     setOcupado(true);
     setErro("");
-    const { error } = await supabase.rpc("reservar", {
+    const { error } = await supabase.rpc(semanal && (r as Extra).recorrente ? "reservar_serie" : "reservar", {
       p_viagem_id: r.viagem_id,
       origem_lng: origem.lng,
       origem_lat: origem.lat,
@@ -178,7 +182,10 @@ function Busca() {
               {r.vagas_livres} {r.vagas_livres === 1 ? "lugar" : "lugares"}
             </p>
             <p className="text-xs text-slate-500">Rota: {r.origem_nome} → {r.destino_nome}</p>
-            {(r as Resultado & { so_mulheres?: boolean }).so_mulheres && (
+            {(r as Extra).recorrente && (
+              <span className="mr-1 mt-1 inline-block rounded-full bg-teal-50 px-2 py-0.5 text-xs text-teal-800">🔁 Repete toda semana</span>
+            )}
+            {(r as Extra).so_mulheres && (
               <span className="mt-1 inline-block rounded-full bg-pink-100 px-2 py-0.5 text-xs text-pink-800">Só mulheres</span>
             )}
           </button>
@@ -198,6 +205,12 @@ function Busca() {
                 {parada ? <>Espere na <strong>{parada.nome}</strong>, que fica na rota do motorista.</> : <>Espere na rua marcada no mapa, que fica na rota do motorista.</>}{" "}
                 Chegue {REGRAS.folgaChegadaMin} min antes: o motorista espera no máximo {REGRAS.toleranciaEsperaMin} min.
               </p>
+              {(r as Extra).recorrente && !enviado && (
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={semanal} onChange={(e) => setSemanal(e.target.checked)} />
+                  Reservar toda semana (todas as próximas viagens deste motorista)
+                </label>
+              )}
               {enviado ? (
                 <p className="rounded-lg bg-teal-50 p-3 text-center text-sm text-teal-800">Pedido enviado! Você será avisado quando o motorista aceitar.</p>
               ) : (

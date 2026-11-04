@@ -18,6 +18,7 @@ export default function BuscaLocal({
   const [opcoes, setOpcoes] = useState<Local[]>([]);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
+  const [semResultado, setSemResultado] = useState(false);
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -27,12 +28,15 @@ export default function BuscaLocal({
   function digitar(t: string) {
     setTexto(t);
     setErro("");
+    setSemResultado(false);
     if (valor) onEscolher(null);
     if (temporizador.current) clearTimeout(temporizador.current);
     temporizador.current = setTimeout(async () => {
       setCarregando(true);
       try {
-        setOpcoes(await buscarEndereco(t));
+        const r = await buscarEndereco(t);
+        setOpcoes(r);
+        setSemResultado(t.trim().length >= 3 && r.length === 0);
       } catch {
         setErro("Busca indisponível no momento");
       } finally {
@@ -77,6 +81,9 @@ export default function BuscaLocal({
         )}
       </div>
       {carregando && <p className="mt-1 text-xs text-slate-500">Buscando…</p>}
+      {semResultado && !carregando && !valor && (
+        <p className="mt-1 text-xs text-amber-700">Nada encontrado. Tente outro nome ou marque o ponto tocando no mapa.</p>
+      )}
       {erro && <p className="mt-1 text-xs text-red-600">{erro}</p>}
       {opcoes.length > 0 && !valor && (
         <ul className="absolute z-[1000] mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">

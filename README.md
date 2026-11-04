@@ -14,7 +14,7 @@ Carona urbana que funciona como linha de ônibus, começando por João Pessoa. O
 
 - Next.js 15 (App Router), instalável no celular como PWA
 - Supabase: cadastro com e-mail e senha (fase de testes, sem confirmação), Postgres + PostGIS para cruzar rotas e pontos, Storage para fotos, Realtime
-- Mapa: Leaflet + OpenStreetMap. Rotas pelo OSRM, endereços pelo Nominatim e paradas pelo Overpass. Os servidores públicos servem para testes. Em produção, use servidores próprios ou pagos (variáveis em `.env.example`).
+- Mapa: Leaflet + OpenStreetMap. Rotas pelo OSRM, endereços e lugares pelo Photon e pelo Nominatim (também dá para marcar o ponto tocando no mapa) e paradas pelo Overpass. Os servidores públicos servem para testes. Em produção, use servidores próprios ou pagos (variáveis em `.env.example`).
 
 ## Rodar localmente
 

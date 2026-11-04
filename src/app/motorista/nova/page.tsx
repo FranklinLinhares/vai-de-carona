@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Protegido from "@/components/Protegido";
 import BuscaLocal from "@/components/BuscaLocal";
 import Mapa from "@/components/Mapa";
-import { tracarRota, formatarReais, type Local, type Rota } from "@/lib/geo";
+import { tracarRota, formatarReais, nomeDoLocal, type Local, type Rota } from "@/lib/geo";
+import MarcarNoMapa from "@/components/MarcarNoMapa";
 import { REGRAS } from "@/lib/config";
 import { supabase, mensagemErro } from "@/lib/supabase";
 
@@ -33,6 +34,16 @@ function Formulario() {
   const [vagas, setVagas] = useState(3);
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
+  const [marcando, setMarcando] = useState<"origem" | "destino" | null>(null);
+
+  async function tocarMapa(lat: number, lng: number) {
+    if (!marcando) return;
+    const qual = marcando;
+    setMarcando(null);
+    const local = { nome: await nomeDoLocal(lat, lng), lat, lng };
+    if (qual === "origem") { setOrigem(local); calcular(local, destino); }
+    else { setDestino(local); calcular(origem, local); }
+  }
 
   async function calcular(o: Local | null, d: Local | null) {
     setRota(null);
@@ -82,7 +93,8 @@ function Formulario() {
         <BuscaLocal rotulo="Indo para" valor={destino} onEscolher={(l) => { setDestino(l); calcular(origem, l); }} />
       </div>
 
-      <Mapa rotas={rota ? [{ coordenadas: rota.coordenadas }] : []} marcadores={marcadores} />
+      <MarcarNoMapa marcando={marcando} onMudar={setMarcando} rotulos={{ origem: "Saída", destino: "Destino" }} />
+      <Mapa rotas={rota ? [{ coordenadas: rota.coordenadas }] : []} marcadores={marcadores} onClique={tocarMapa} />
       {ocupado && !rota && <p className="text-sm text-slate-500">Traçando a rota…</p>}
       {rota && (
         <p className="text-sm text-slate-600">

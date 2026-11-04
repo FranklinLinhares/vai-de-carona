@@ -2,27 +2,64 @@ import { CIDADE, SERVICOS } from "./config";
 
 export type Local = { nome: string; lat: number; lng: number };
 
-/** Busca enderecos dentro de Joao Pessoa (Nominatim / OpenStreetMap). */
-export async function buscarEndereco(texto: string): Promise<Local[]> {
-  if (texto.trim().length < 3) return [];
+type FeaturePhoton = {
+  geometry: { coordinates: [number, number] };
+  properties: {
+    name?: string; street?: string; housenumber?: string; district?: string;
+    locality?: string; city?: string; osm_key?: string; osm_value?: string;
+  };
+};
+
+/** Photon: busca tolerante a nomes parciais e bom para lugares (orgaos, lojas, escolas). */
+async function buscarPhoton(texto: string): Promise<Local[]> {
+  const [o, n, l, s] = CIDADE.viewbox;
+  const [lat, lng] = CIDADE.centro;
+  const params = new URLSearchParams({
+    q: texto, limit: "8", lat: String(lat), lon: String(lng),
+    bbox: `${o},${s},${l},${n}`, location_bias_scale: "0.5",
+  });
+  const r = await fetch(`${SERVICOS.photon}/api/?${params}`);
+  if (!r.ok) return [];
+  const d: { features: FeaturePhoton[] } = await r.json();
+  return d.features.map((f) => {
+    const p = f.properties;
+    const rua = [p.street, p.housenumber].filter(Boolean).join(", ");
+    const bairro = p.district ?? p.locality;
+    const partes = [p.name, p.name !== p.street ? rua : p.housenumber, bairro].filter(Boolean);
+    return { nome: [...new Set(partes)].join(" · "), lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] };
+  });
+}
+
+/** Nominatim: bom para enderecos completos. */
+async function buscarNominatim(texto: string): Promise<Local[]> {
   const [o, n, l, s] = CIDADE.viewbox;
   const params = new URLSearchParams({
-    q: texto,
-    format: "jsonv2",
-    limit: "6",
-    countrycodes: "br",
-    viewbox: `${o},${n},${l},${s}`,
-    bounded: "1",
-    "accept-language": "pt-BR",
+    q: texto, format: "jsonv2", limit: "6", countrycodes: "br",
+    viewbox: `${o},${n},${l},${s}`, bounded: "1", "accept-language": "pt-BR",
   });
   const r = await fetch(`${SERVICOS.nominatim}/search?${params}`);
-  if (!r.ok) throw new Error("Não foi possível buscar o endereço");
+  if (!r.ok) return [];
   const dados: { display_name: string; lat: string; lon: string }[] = await r.json();
   return dados.map((d) => ({
     nome: d.display_name.split(",").slice(0, 3).join(","),
     lat: Number(d.lat),
     lng: Number(d.lon),
   }));
+}
+
+/** Busca enderecos e lugares dentro de Joao Pessoa, juntando as duas fontes. */
+export async function buscarEndereco(texto: string): Promise<Local[]> {
+  if (texto.trim().length < 3) return [];
+  const [a, b] = await Promise.allSettled([buscarPhoton(texto), buscarNominatim(texto)]);
+  const todos = [
+    ...(a.status === "fulfilled" ? a.value : []),
+    ...(b.status === "fulfilled" ? b.value : []),
+  ];
+  if (a.status === "rejected" && b.status === "rejected") throw new Error("Busca indisponível");
+  // remove repetidos (mesmo ponto a menos de ~50 m)
+  const unicos: Local[] = [];
+  for (const l of todos) if (!unicos.some((u) => distanciaM(u, l) < 50)) unicos.push(l);
+  return unicos.slice(0, 8);
 }
 
 /** Nome legivel para uma coordenada (ex.: localizacao atual). */

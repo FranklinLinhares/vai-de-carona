@@ -7,7 +7,8 @@ import BuscaLocal from "@/components/BuscaLocal";
 import Mapa from "@/components/Mapa";
 import { Nota } from "@/components/Estrelas";
 import { supabase, mensagemErro, type Resultado, type ViagemDetalhe } from "@/lib/supabase";
-import { formatarHora, formatarReais, sugerirParada, type Local, type Parada } from "@/lib/geo";
+import { formatarHora, formatarReais, sugerirParada, nomeDoLocal, type Local, type Parada } from "@/lib/geo";
+import MarcarNoMapa from "@/components/MarcarNoMapa";
 import { REGRAS } from "@/lib/config";
 
 export default function PegarCarona() {
@@ -29,6 +30,16 @@ function Busca() {
   const [parada, setParada] = useState<Parada | null>(null);
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
+  const [marcando, setMarcando] = useState<"origem" | "destino" | null>(null);
+
+  async function tocarMapa(lat: number, lng: number) {
+    if (!marcando) return;
+    const qual = marcando;
+    setMarcando(null);
+    const local = { nome: await nomeDoLocal(lat, lng), lat, lng };
+    if (qual === "origem") setOrigem(local);
+    else setDestino(local);
+  }
 
   async function buscar() {
     if (!origem || !destino) return;
@@ -88,6 +99,17 @@ function Busca() {
       <div className="cartao space-y-3">
         <BuscaLocal rotulo="Estou em" valor={origem} permitirLocalizacao onEscolher={setOrigem} />
         <BuscaLocal rotulo="Quero ir para" valor={destino} onEscolher={setDestino} />
+        <MarcarNoMapa marcando={marcando} onMudar={setMarcando} rotulos={{ origem: "Onde estou", destino: "Destino" }} />
+        {(marcando || (!resultados && (origem || destino))) && (
+          <Mapa
+            altura={240}
+            onClique={tocarMapa}
+            marcadores={[
+              ...(origem ? [{ ...origem, cor: "#64748b", rotulo: "Você" }] : []),
+              ...(destino ? [{ ...destino, cor: "#b91c1c", rotulo: "Destino" }] : []),
+            ]}
+          />
+        )}
         <div>
           <label className="mb-1 block text-sm font-medium">Saindo nas próximas</label>
           <select className="campo" value={janela} onChange={(e) => setJanela(Number(e.target.value))}>

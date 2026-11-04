@@ -18,6 +18,7 @@ export const REGRAS = {
 export const SERVICOS = {
   // Servidores publicos de demonstracao. Em producao, use servidores proprios ou pagos.
   osrm: process.env.NEXT_PUBLIC_OSRM_URL ?? "https://router.project-osrm.org",
+  photon: process.env.NEXT_PUBLIC_PHOTON_URL ?? "https://photon.komoot.io",
   nominatim: process.env.NEXT_PUBLIC_NOMINATIM_URL ?? "https://nominatim.openstreetmap.org",
   overpass: process.env.NEXT_PUBLIC_OVERPASS_URL ?? "https://overpass-api.de/api/interpreter",
 };

@@ -70,6 +70,12 @@ function Lista() {
     };
   }, [carregar]);
 
+  async function responder(id: string, aceitar: boolean) {
+    const { error } = await supabase.rpc("responder_reserva", { p_reserva_id: id, p_aceitar: aceitar });
+    if (error) return setErro(mensagemErro(error));
+    carregar();
+  }
+
   async function mudarStatus(id: string, status: ViagemDetalhe["status"]) {
     if (status === "cancelada" && !confirm("Cancelar esta viagem? Os passageiros serão avisados.")) return;
     const { error } = await supabase.from("viagens").update({ status }).eq("id", id);
@@ -107,6 +113,7 @@ function Lista() {
             />
             <p className="text-sm">
               {rs.length} de {v.vagas} lugares reservados · {formatarReais(v.tarifa)} por pessoa
+              {v.so_mulheres && <span className="ml-2 rounded-full bg-pink-100 px-2 py-0.5 text-xs text-pink-800">Só mulheres</span>}
             </p>
             {rs.length > 0 && (
               <ul className="divide-y divide-slate-100 rounded-lg border border-slate-100">
@@ -126,10 +133,15 @@ function Lista() {
                           <a className="text-teal-700 underline" href={linkMapa(r.embarque_lat, r.embarque_lng)} target="_blank">ver ponto</a>
                         </p>
                       </div>
-                      {r.passageiro?.telefone && (
-                        <a href={`https://wa.me/55${r.passageiro.telefone.replace(/\D/g, "")}`} target="_blank" className="botao-secundario">WhatsApp</a>
-                      )}
+                      <Link href={`/chat/${r.id}`} className="botao-secundario">💬 Chat</Link>
                     </div>
+                    {r.aprovacao === "pendente" && v.status === "aberta" && (
+                      <div className="flex gap-2">
+                        <button className="botao flex-1 py-1.5 text-sm" onClick={() => responder(r.id, true)}>Aceitar</button>
+                        <button className="botao-secundario flex-1" onClick={() => responder(r.id, false)}>Recusar</button>
+                      </div>
+                    )}
+                    {r.aprovacao === "pendente" && <p className="text-xs font-medium text-amber-700">Aguardando sua resposta</p>}
                     {v.status === "concluida" && r.passageiro && (
                       <Avaliar viagemId={v.id} avaliadoId={r.passageiro_id} nome={r.passageiro.nome.split(" ")[0]} />
                     )}

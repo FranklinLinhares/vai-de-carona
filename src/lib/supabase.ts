@@ -21,6 +21,7 @@ export type Perfil = {
   nota_media: number | null;
   total_avaliacoes: number;
   suspenso: boolean;
+  genero: "feminino" | "masculino" | "outro" | null;
 };
 
 export type ViagemDetalhe = {
@@ -35,6 +36,7 @@ export type ViagemDetalhe = {
   tarifa: number;
   status: "aberta" | "em_andamento" | "concluida" | "cancelada";
   rota_geojson: { type: "LineString"; coordinates: [number, number][] };
+  so_mulheres: boolean;
 };
 
 export type ReservaDetalhe = {
@@ -50,6 +52,7 @@ export type ReservaDetalhe = {
   embarque_lat: number;
   desembarque_lng: number;
   desembarque_lat: number;
+  aprovacao: "pendente" | "aceita" | "recusada";
 };
 
 export type Resultado = {
@@ -75,7 +78,7 @@ export type Resultado = {
 
 // Colunas de perfis visiveis para outros usuarios (CPF e CNH ficam ocultos)
 export const COLUNAS_PUBLICAS_PERFIL =
-  "id,nome,telefone,foto_url,carro_modelo,carro_cor,carro_placa,chave_pix,nota_media,total_avaliacoes,suspenso";
+  "id,nome,telefone,foto_url,carro_modelo,carro_cor,carro_placa,chave_pix,nota_media,total_avaliacoes,suspenso,genero";
 
 export function mensagemErro(e: unknown): string {
   if (e && typeof e === "object" && "message" in e) return String((e as { message: string }).message);

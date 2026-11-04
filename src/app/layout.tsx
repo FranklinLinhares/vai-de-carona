@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { SessaoProvider } from "@/components/Sessao";
 import Navegacao from "@/components/Navegacao";
+import Notificacoes from "@/components/Notificacoes";
 
 const inter = Inter({ variable: "--font-sans", subsets: ["latin"] });
 
@@ -19,7 +20,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="pt-BR">
       <body className={`${inter.variable} antialiased`}>
         <SessaoProvider>
-          <main className="mx-auto min-h-screen max-w-lg pb-24">{children}</main>
+          <main className="mx-auto min-h-screen max-w-lg pb-24 pt-12">{children}</main>
+          <Notificacoes />
           <Navegacao />
         </SessaoProvider>
       </body>

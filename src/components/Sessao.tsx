@@ -21,7 +21,12 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
   const carregarPerfil = useCallback(async (s: Session | null) => {
     if (!s) return setPerfil(null);
     const { data } = await supabase.rpc("meu_perfil");
-    setPerfil(((data as Perfil[] | null) ?? [])[0] ?? null);
+    const p = ((data as Perfil[] | null) ?? [])[0] ?? null;
+    if (p) {
+      const { data: g } = await supabase.from("perfis").select("genero").eq("id", s.user.id).maybeSingle();
+      p.genero = (g?.genero as Perfil["genero"]) ?? null;
+    }
+    setPerfil(p);
   }, []);
 
   useEffect(() => {

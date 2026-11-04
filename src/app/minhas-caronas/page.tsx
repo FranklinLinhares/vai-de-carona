@@ -92,9 +92,11 @@ function Lista() {
   }
 
   const status = (i: Item) => {
+    if (i.aprovacao === "recusada") return { texto: "Recusada", cor: "bg-red-100 text-red-700" };
     if (i.status === "cancelada") return { texto: "Cancelada", cor: "bg-slate-100 text-slate-600" };
     if (i.viagem.status === "em_andamento") return { texto: "Em andamento", cor: "bg-blue-100 text-blue-800" };
     if (i.status === "concluida") return { texto: "Concluída", cor: "bg-teal-100 text-teal-800" };
+    if (i.aprovacao === "pendente") return { texto: "Aguardando o motorista", cor: "bg-slate-100 text-slate-700" };
     return { texto: "Confirmada", cor: "bg-amber-100 text-amber-800" };
   };
 
@@ -110,7 +112,8 @@ function Lista() {
       )}
       {itens.map((i) => {
         const s = status(i);
-        const ativa = i.status === "confirmada";
+        const ativa = i.status === "confirmada" && i.aprovacao === "aceita";
+        const pendente = i.status === "confirmada" && i.aprovacao === "pendente";
         return (
           <article key={i.id} className="cartao space-y-3">
             <div className="flex items-start justify-between">
@@ -131,8 +134,8 @@ function Lista() {
                 <p className="font-medium">{i.motorista.nome} <Nota nota={i.motorista.nota_media} total={i.motorista.total_avaliacoes} /></p>
                 <p>{i.motorista.carro_modelo} {i.motorista.carro_cor} · <strong>{i.motorista.carro_placa}</strong></p>
               </div>
-              {ativa && (
-                <a href={`https://wa.me/55${i.motorista.telefone.replace(/\D/g, "")}`} target="_blank" className="botao-secundario">WhatsApp</a>
+              {(ativa || pendente) && (
+                <Link href={`/chat/${i.id}`} className="botao-secundario">💬 Chat</Link>
               )}
             </div>
 
@@ -167,6 +170,13 @@ function Lista() {
                   )}
                 </div>
               </>
+            )}
+
+            {pendente && (
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm text-slate-600">Pedido enviado. Você será avisado quando o motorista responder.</p>
+                <button className="botao-secundario" onClick={() => cancelar(i.id)}>Cancelar</button>
+              </div>
             )}
 
             {i.status === "concluida" && (

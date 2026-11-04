@@ -9,6 +9,7 @@ import { Nota } from "@/components/Estrelas";
 import { supabase, mensagemErro, type Resultado, type ViagemDetalhe } from "@/lib/supabase";
 import { formatarHora, formatarReais, sugerirParada, nomeDoLocal, type Local, type Parada } from "@/lib/geo";
 import MarcarNoMapa from "@/components/MarcarNoMapa";
+import { useSessao } from "@/components/Sessao";
 import { REGRAS } from "@/lib/config";
 
 export default function PegarCarona() {
@@ -21,6 +22,9 @@ export default function PegarCarona() {
 
 function Busca() {
   const router = useRouter();
+  const { perfil } = useSessao();
+  const [soMulheres, setSoMulheres] = useState(false);
+  const [enviado, setEnviado] = useState(false);
   const [origem, setOrigem] = useState<Local | null>(null);
   const [destino, setDestino] = useState<Local | null>(null);
   const [janela, setJanela] = useState(2);
@@ -55,9 +59,27 @@ function Busca() {
       ate: new Date(Date.now() + janela * 3600000).toISOString(),
       raio_m: REGRAS.raioCaminhadaM,
     });
+    if (error) {
+      setOcupado(false);
+      return setErro(mensagemErro(error));
+    }
+    let lista = (data as Resultado[]) ?? [];
+    if (lista.length) {
+      // genero das motoristas e viagens so para mulheres
+      const [{ data: ps }, { data: vs }] = await Promise.all([
+        supabase.from("perfis").select("id,genero").in("id", [...new Set(lista.map((r) => r.motorista_id))]),
+        supabase.from("viagens").select("id,so_mulheres").in("id", lista.map((r) => r.viagem_id)),
+      ]);
+      const genero = Object.fromEntries((ps ?? []).map((p) => [p.id, p.genero]));
+      const soElas = new Set((vs ?? []).filter((v) => v.so_mulheres).map((v) => v.id));
+      const souMulher = perfil?.genero === "feminino";
+      lista = lista
+        .filter((r) => souMulher || !soElas.has(r.viagem_id))
+        .filter((r) => !soMulheres || genero[r.motorista_id] === "feminino")
+        .map((r) => ({ ...r, so_mulheres: soElas.has(r.viagem_id) }));
+    }
     setOcupado(false);
-    if (error) return setErro(mensagemErro(error));
-    setResultados((data as Resultado[]) ?? []);
+    setResultados(lista);
   }
 
   async function abrir(r: Resultado) {
@@ -88,7 +110,8 @@ function Busca() {
     });
     setOcupado(false);
     if (error) return setErro(mensagemErro(error));
-    router.push("/minhas-caronas");
+    setEnviado(true);
+    setTimeout(() => router.push("/minhas-caronas"), 1800);
   }
 
   const embarque = aberto ? (parada ?? { lat: aberto.embarque_lat, lng: aberto.embarque_lng, nome: "Ponto na via" }) : null;
@@ -119,6 +142,12 @@ function Busca() {
             <option value={12}>12 horas</option>
           </select>
         </div>
+        {perfil?.genero === "feminino" && (
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={soMulheres} onChange={(e) => setSoMulheres(e.target.checked)} />
+            Só motoristas mulheres
+          </label>
+        )}
         <button className="botao w-full" disabled={!origem || !destino || ocupado} onClick={buscar}>
           {ocupado ? "Buscando…" : "Buscar caronas"}
         </button>
@@ -149,6 +178,9 @@ function Busca() {
               {r.vagas_livres} {r.vagas_livres === 1 ? "lugar" : "lugares"}
             </p>
             <p className="text-xs text-slate-500">Rota: {r.origem_nome} → {r.destino_nome}</p>
+            {(r as Resultado & { so_mulheres?: boolean }).so_mulheres && (
+              <span className="mt-1 inline-block rounded-full bg-pink-100 px-2 py-0.5 text-xs text-pink-800">Só mulheres</span>
+            )}
           </button>
 
           {aberto?.viagem_id === r.viagem_id && embarque && (
@@ -166,10 +198,14 @@ function Busca() {
                 {parada ? <>Espere na <strong>{parada.nome}</strong>, que fica na rota do motorista.</> : <>Espere na rua marcada no mapa, que fica na rota do motorista.</>}{" "}
                 Chegue {REGRAS.folgaChegadaMin} min antes: o motorista espera no máximo {REGRAS.toleranciaEsperaMin} min.
               </p>
-              <button className="botao w-full py-3" disabled={ocupado} onClick={() => reservar(r)}>
-                Reservar por {formatarReais(r.tarifa)}
-              </button>
-              <p className="text-center text-xs text-slate-500">O pagamento é feito por Pix direto ao motorista.</p>
+              {enviado ? (
+                <p className="rounded-lg bg-teal-50 p-3 text-center text-sm text-teal-800">Pedido enviado! Você será avisado quando o motorista aceitar.</p>
+              ) : (
+                <button className="botao w-full py-3" disabled={ocupado} onClick={() => reservar(r)}>
+                  Pedir carona por {formatarReais(r.tarifa)}
+                </button>
+              )}
+              <p className="text-center text-xs text-slate-500">O motorista confirma o pedido. O pagamento é por Pix direto a ele.</p>
             </div>
           )}
         </article>

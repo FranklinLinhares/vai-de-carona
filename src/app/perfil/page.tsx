@@ -6,9 +6,9 @@ import { supabase, mensagemErro, supabaseConfigurado, type Perfil } from "@/lib/
 import { useSessao } from "@/components/Sessao";
 import { Nota } from "@/components/Estrelas";
 
-type Form = Pick<Perfil, "nome" | "telefone" | "foto_url" | "cpf" | "cnh" | "carro_modelo" | "carro_cor" | "carro_placa" | "chave_pix">;
+type Form = Pick<Perfil, "nome" | "telefone" | "foto_url" | "cpf" | "cnh" | "carro_modelo" | "carro_cor" | "carro_placa" | "chave_pix"> & { genero: string };
 
-const vazio: Form = { nome: "", telefone: "", foto_url: "", cpf: "", cnh: "", carro_modelo: "", carro_cor: "", carro_placa: "", chave_pix: "" };
+const vazio: Form = { genero: "", nome: "", telefone: "", foto_url: "", cpf: "", cnh: "", carro_modelo: "", carro_cor: "", carro_placa: "", chave_pix: "" };
 
 export default function PaginaPerfil() {
   const { sessao, perfil, carregando, recarregarPerfil } = useSessao();
@@ -94,6 +94,16 @@ export default function PaginaPerfil() {
           <Campo rotulo="Nome completo" valor={form.nome} onChange={set("nome")} obrigatorio />
           <Campo rotulo="Celular (com DDD)" valor={form.telefone} onChange={set("telefone")} obrigatorio tipo="tel" placeholder="83 99999-0000" />
           <Campo rotulo="CPF" valor={form.cpf ?? ""} onChange={set("cpf")} obrigatorio placeholder="000.000.000-00" />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Gênero</label>
+            <select className="campo" value={form.genero} onChange={(e) => setForm({ ...form, genero: e.target.value })}>
+              <option value="">Prefiro não informar</option>
+              <option value="feminino">Feminino</option>
+              <option value="masculino">Masculino</option>
+              <option value="outro">Outro</option>
+            </select>
+            <p className="mt-1 text-xs text-slate-500">Usado no filtro &quot;só mulheres&quot;, para motoristas e passageiras.</p>
+          </div>
           <p className="text-xs text-slate-500">E-mail: {sessao.user.email}</p>
         </section>
 

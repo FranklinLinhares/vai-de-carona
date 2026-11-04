@@ -9,6 +9,7 @@ import { tracarRota, formatarReais, nomeDoLocal, type Local, type Rota } from "@
 import MarcarNoMapa from "@/components/MarcarNoMapa";
 import { REGRAS } from "@/lib/config";
 import { supabase, mensagemErro } from "@/lib/supabase";
+import { useSessao } from "@/components/Sessao";
 
 function horarioPadrao() {
   const d = new Date(Date.now() + 30 * 60000);
@@ -27,6 +28,8 @@ export default function NovaViagem() {
 
 function Formulario() {
   const router = useRouter();
+  const { perfil } = useSessao();
+  const [soMulheres, setSoMulheres] = useState(false);
   const [origem, setOrigem] = useState<Local | null>(null);
   const [destino, setDestino] = useState<Local | null>(null);
   const [rota, setRota] = useState<Rota | null>(null);
@@ -65,7 +68,7 @@ function Formulario() {
     if (quando.getTime() < Date.now() - 5 * 60000) return setErro("O horário de saída já passou.");
     setOcupado(true);
     setErro("");
-    const { error } = await supabase.rpc("publicar_viagem", {
+    const { data: novaId, error } = await supabase.rpc("publicar_viagem", {
       p_origem_nome: origem.nome,
       p_destino_nome: destino.nome,
       p_rota_geojson: { type: "LineString", coordinates: rota.coordenadas },
@@ -75,6 +78,7 @@ function Formulario() {
       p_vagas: vagas,
       p_tarifa: REGRAS.tarifa,
     });
+    if (!error && soMulheres) await supabase.from("viagens").update({ so_mulheres: true }).eq("id", novaId as string);
     setOcupado(false);
     if (error) return setErro(mensagemErro(error));
     router.push("/motorista");
@@ -121,6 +125,13 @@ function Formulario() {
         </div>
       </div>
 
+      {perfil?.genero === "feminino" && (
+        <label className="cartao flex items-center gap-2 text-sm">
+          <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={soMulheres} onChange={(e) => setSoMulheres(e.target.checked)} />
+          Levar só passageiras mulheres
+        </label>
+      )}
+      <p className="text-xs text-slate-500">Limite de 2 caronas por dia: a carona serve para dividir custos, não para trabalhar como motorista.</p>
       {erro && <p className="text-sm text-red-600">{erro}</p>}
       <button className="botao w-full py-3 text-lg" disabled={!rota || ocupado} onClick={publicar}>
         Publicar viagem

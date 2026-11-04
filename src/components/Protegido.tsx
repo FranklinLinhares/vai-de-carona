@@ -11,7 +11,7 @@ export default function Protegido({ children, motorista = false }: { children: R
   if (!supabaseConfigurado)
     return <Aviso titulo="Banco de dados não configurado" texto="Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY no arquivo .env.local." />;
   if (carregando) return <p className="p-6 text-slate-500">Carregando…</p>;
-  if (!sessao) return <Aviso titulo="Entre para continuar" texto="Use seu e-mail para entrar." link={{ href: "/entrar", texto: "Entrar" }} />;
+  if (!sessao) return <Aviso titulo="Entre para continuar" texto="Crie sua conta com e-mail e senha." link={{ href: "/entrar", texto: "Entrar" }} />;
   if (!perfil) return <Aviso titulo="Complete seu cadastro" texto="Precisamos do seu nome e telefone." link={{ href: "/perfil", texto: "Completar cadastro" }} />;
   if (perfil.suspenso)
     return <Aviso titulo="Conta em revisão" texto="Sua conta foi suspensa por avaliações baixas. Fale com o suporte." />;

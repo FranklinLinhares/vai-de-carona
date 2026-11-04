@@ -13,7 +13,7 @@ Carona urbana que funciona como linha de ônibus, começando por João Pessoa. O
 ## Tecnologia
 
 - Next.js 15 (App Router), instalável no celular como PWA
-- Supabase: login por código no e-mail, Postgres + PostGIS para cruzar rotas e pontos, Storage para fotos, Realtime
+- Supabase: cadastro com e-mail e senha (fase de testes, sem confirmação), Postgres + PostGIS para cruzar rotas e pontos, Storage para fotos, Realtime
 - Mapa: Leaflet + OpenStreetMap. Rotas pelo OSRM, endereços pelo Nominatim e paradas pelo Overpass. Os servidores públicos servem para testes. Em produção, use servidores próprios ou pagos (variáveis em `.env.example`).
 
 ## Rodar localmente
@@ -31,7 +31,7 @@ O banco fica em `supabase/migrations/`. As funções principais são `buscar_via
 | Rota | O que faz |
 | --- | --- |
 | `/` | Início e como funciona |
-| `/entrar` | Login com código por e-mail |
+| `/entrar` | Cadastro e login com e-mail e senha |
 | `/perfil` | Cadastro do passageiro e, opcionalmente, do motorista |
 | `/motorista/nova` | Publicar viagem: origem, destino, rota, horário e vagas |
 | `/motorista` | Viagens do motorista, passageiros e pontos de embarque, iniciar e concluir |

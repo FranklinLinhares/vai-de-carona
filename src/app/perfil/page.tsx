@@ -44,7 +44,7 @@ export default function PaginaPerfil() {
     if (!arquivo || !sessao) return;
     setEnviandoFoto(true);
     const caminho = `${sessao.user.id}/perfil-${Date.now()}`;
-    const { error } = await supabase.storage.from("fotos").upload(caminho, arquivo, { upsert: true, contentType: arquivo.type });
+    const { error } = await supabase.storage.from("fotos").upload(caminho, arquivo, { upsert: false, contentType: arquivo.type || "image/jpeg" });
     setEnviandoFoto(false);
     if (error) return setErro(mensagemErro(error));
     const { data } = supabase.storage.from("fotos").getPublicUrl(caminho);

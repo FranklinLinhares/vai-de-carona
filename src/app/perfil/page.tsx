@@ -61,8 +61,12 @@ export default function PaginaPerfil() {
     const limpo = Object.fromEntries(Object.entries(form).map(([k, v]) => [k, v?.trim() ? v.trim() : null]));
     if (!motorista) Object.assign(limpo, { cnh: null, carro_modelo: null, carro_cor: null, carro_placa: null, chave_pix: null });
     if (limpo.carro_placa) limpo.carro_placa = String(limpo.carro_placa).toUpperCase();
-    const { error } = await supabase.from("perfis").upsert({ id: sessao!.user.id, ...limpo });
+    const { cpf, cnh, ...publico } = limpo;
+    const { error } = await supabase.from("perfis").upsert({ id: sessao!.user.id, ...publico });
     if (error) return setErro(mensagemErro(error));
+    // CPF e CNH ficam numa tabela que so voce consegue ler
+    const { error: erroPrivado } = await supabase.from("perfis_privados").upsert({ id: sessao!.user.id, cpf, cnh });
+    if (erroPrivado) return setErro(mensagemErro(erroPrivado));
     await recarregarPerfil();
     setMsg("Perfil salvo!");
   }

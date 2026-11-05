@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Protegido from "@/components/Protegido";
 import Mapa from "@/components/Mapa";
+import CompartilharPosicao from "@/components/CompartilharPosicao";
 import { Avaliar, Nota } from "@/components/Estrelas";
 import { useSessao } from "@/components/Sessao";
 import { supabase, mensagemErro, COLUNAS_PUBLICAS_PERFIL, type ViagemDetalhe, type ReservaDetalhe, type Perfil } from "@/lib/supabase";
@@ -188,6 +189,7 @@ function Lista() {
               )}
               {v.status === "em_andamento" && (
                 <>
+                  <CompartilharPosicao viagemId={v.id} />
                   <button className="botao flex-1" onClick={() => mudarStatus(v.id, "concluida")}>Concluir viagem</button>
                   <a href="tel:190" className="botao-perigo">🚨 190</a>
                 </>

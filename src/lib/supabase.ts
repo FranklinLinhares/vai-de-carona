@@ -57,6 +57,11 @@ export type ReservaDetalhe = {
   desembarque_lat: number;
   aprovacao: "pendente" | "aceita" | "recusada";
   recorrente_id: string | null;
+  // so aparecem para o proprio passageiro
+  origem_lat?: number | null;
+  origem_lng?: number | null;
+  destino_lat?: number | null;
+  destino_lng?: number | null;
 };
 
 export type Resultado = {

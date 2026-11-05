@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Protegido from "@/components/Protegido";
-import Mapa from "@/components/Mapa";
+import PlanoViagem from "@/components/PlanoViagem";
 import { Avaliar, Nota } from "@/components/Estrelas";
 import { useSessao } from "@/components/Sessao";
 import { supabase, mensagemErro, COLUNAS_PUBLICAS_PERFIL, type ReservaDetalhe, type ViagemDetalhe, type Perfil } from "@/lib/supabase";
@@ -26,6 +26,7 @@ function Lista() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const [copiado, setCopiado] = useState("");
+  const [posicoes, setPosicoes] = useState<Record<string, { lat: number; lng: number; atualizado_em: string }>>({});
 
   const carregar = useCallback(async () => {
     if (!perfil) return;
@@ -48,6 +49,12 @@ function Lista() {
         .map((r) => ({ ...(r as ReservaDetalhe), viagem: vPor[r.viagem_id], motorista: mPor[vPor[r.viagem_id].motorista_id] })),
     );
     setCarregando(false);
+    // onde o carro esta agora (so durante a viagem)
+    const andamento = (vs ?? []).filter((v) => v.status === "em_andamento").map((v) => v.id);
+    if (andamento.length) {
+      const { data: ps } = await supabase.from("posicao_viagem").select("*").in("viagem_id", andamento);
+      setPosicoes(Object.fromEntries((ps ?? []).map((p) => [p.viagem_id, p])));
+    }
   }, [perfil]);
 
   useEffect(() => {
@@ -55,6 +62,10 @@ function Lista() {
     const canal = supabase
       .channel("viagens-passageiro")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "viagens" }, () => carregar())
+      .on("postgres_changes", { event: "*", schema: "public", table: "posicao_viagem" }, (e) => {
+        const p = e.new as { viagem_id: string; lat: number; lng: number; atualizado_em: string };
+        if (p?.viagem_id) setPosicoes((atual) => ({ ...atual, [p.viagem_id]: p }));
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(canal);
@@ -147,19 +158,30 @@ function Lista() {
               )}
             </div>
 
+            {(ativa || pendente) && (
+              <PlanoViagem
+                altura={240}
+                rota={i.viagem.rota_geojson.coordinates}
+                origem={i.origem_lat != null && i.origem_lng != null ? { lat: i.origem_lat, lng: i.origem_lng } : null}
+                destino={i.destino_lat != null && i.destino_lng != null ? { lat: i.destino_lat, lng: i.destino_lng } : null}
+                embarque={{ lat: i.embarque_lat, lng: i.embarque_lng }}
+                embarqueNome={i.embarque_nome}
+                desembarque={{ lat: i.desembarque_lat, lng: i.desembarque_lng }}
+                carro={i.viagem.status === "em_andamento" ? posicoes[i.viagem_id] : null}
+              />
+            )}
+
             {ativa && (
               <>
-                <Mapa
-                  altura={220}
-                  rotas={[{ coordenadas: i.viagem.rota_geojson.coordinates }]}
-                  marcadores={[
-                    { lat: i.embarque_lat, lng: i.embarque_lng, cor: "#2563eb", rotulo: "Embarque" },
-                    { lat: i.desembarque_lat, lng: i.desembarque_lng, cor: "#b91c1c", rotulo: "Desce" },
-                  ]}
-                />
-                <p className="text-sm text-slate-600">
-                  Chegue {REGRAS.folgaChegadaMin} min antes. O motorista espera até {REGRAS.toleranciaEsperaMin} min.
-                </p>
+                {i.viagem.status === "em_andamento" && !posicoes[i.viagem_id] && (
+                  <p className="text-sm text-slate-600">A viagem começou. A posição do carro aparece quando o motorista compartilhar a localização.</p>
+                )}
+                {i.viagem.status === "aberta" && (
+                  <p className="rounded-lg bg-amber-50 p-2 text-sm text-amber-900">
+                    Esteja no ponto às <strong>{formatarHora(new Date(new Date(i.embarque_previsto).getTime() - REGRAS.folgaChegadaMin * 60000).toISOString())}</strong>.
+                    O motorista espera no máximo {REGRAS.toleranciaEsperaMin} min.
+                  </p>
+                )}
                 {i.motorista.chave_pix && (
                   <div className="flex items-center justify-between rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm">
                     <span>

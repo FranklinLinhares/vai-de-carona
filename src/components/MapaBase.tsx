@@ -2,11 +2,14 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Polyline, CircleMarker, Marker, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import { useEffect } from "react";
 import { CIDADE } from "@/lib/config";
 
-export type Marcador = { lat: number; lng: number; cor: string; rotulo: string };
+export type Marcador = { lat: number; lng: number; cor: string; rotulo: string; icone?: string }; // icone: emoji no lugar do circulo
+
+const iconeEmoji = (emoji: string) =>
+  L.divIcon({ html: `<span style="font-size:24px;line-height:24px;filter:drop-shadow(0 1px 1px #0006)">${emoji}</span>`, className: "", iconSize: [24, 24], iconAnchor: [12, 20] });
 
 function Enquadrar({ pontos }: { pontos: [number, number][] }) {
   const mapa = useMap();
@@ -27,14 +30,16 @@ export default function MapaBase({
   marcadores = [],
   altura = 320,
   onClique,
+  enquadrar: focar,
 }: {
-  rotas?: { coordenadas: [number, number][]; cor?: string }[]; // [lng, lat]
+  rotas?: { coordenadas: [number, number][]; cor?: string; tracejada?: boolean; peso?: number; opacidade?: number }[]; // [lng, lat]
   marcadores?: Marcador[];
   altura?: number;
   onClique?: (lat: number, lng: number) => void;
+  enquadrar?: { lat: number; lng: number }[]; // pontos para dar zoom (padrao: tudo)
 }) {
   const linhas = rotas.map((r) => ({ ...r, latlng: r.coordenadas.map(([lng, lat]) => [lat, lng] as [number, number]) }));
-  const enquadrar: [number, number][] = [
+  const enquadrar: [number, number][] = focar?.length ? focar.map((p) => [p.lat, p.lng] as [number, number]) : [
     ...linhas.flatMap((l) => l.latlng),
     ...marcadores.map((m) => [m.lat, m.lng] as [number, number]),
   ];
@@ -46,9 +51,14 @@ export default function MapaBase({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {linhas.map((l, i) => (
-          <Polyline key={i} positions={l.latlng} pathOptions={{ color: l.cor ?? "#0f766e", weight: 5, opacity: 0.85 }} />
+          <Polyline key={i} positions={l.latlng} pathOptions={{ color: l.cor ?? "#0f766e", weight: l.peso ?? 5, opacity: l.opacidade ?? 0.85, dashArray: l.tracejada ? "2 9" : undefined, lineCap: "round" }} />
         ))}
-        {marcadores.map((m, i) => (
+        {marcadores.map((m, i) =>
+          m.icone ? (
+            <Marker key={i} position={[m.lat, m.lng]} icon={iconeEmoji(m.icone)} zIndexOffset={1000}>
+              <Tooltip direction="top" offset={[0, -18]}>{m.rotulo}</Tooltip>
+            </Marker>
+          ) : (
           <CircleMarker
             key={i}
             center={[m.lat, m.lng]}
@@ -57,7 +67,8 @@ export default function MapaBase({
           >
             <Tooltip permanent direction="top" offset={[0, -8]}>{m.rotulo}</Tooltip>
           </CircleMarker>
-        ))}
+          ),
+        )}
         <Enquadrar pontos={enquadrar} />
         <Clique onClique={onClique} />
       </MapContainer>

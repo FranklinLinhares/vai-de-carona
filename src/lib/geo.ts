@@ -189,3 +189,62 @@ export function pontoNaRota(p: { lat: number; lng: number }, rota: [number, numb
   }
   return { lat: melhor.lat, lng: melhor.lng, distancia: melhor.d };
 }
+
+/** Caminho a pe entre dois pontos. Se o servico falhar, usa a linha reta. */
+export async function tracarCaminhada(a: { lat: number; lng: number }, b: { lat: number; lng: number }): Promise<Rota> {
+  try {
+    const url = `${SERVICOS.osrmPe}/route/v1/foot/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error();
+    const rota = (await r.json()).routes?.[0];
+    if (!rota) throw new Error();
+    const distancia = Math.round(rota.distance);
+    return { coordenadas: rota.geometry.coordinates, distanciaM: distancia, duracaoS: Math.round(distancia / 1.3) };
+  } catch {
+    const d = Math.round(distanciaM(a, b) * 1.3); // ruas nao sao linha reta
+    return { coordenadas: [[a.lng, a.lat], [b.lng, b.lat]], distanciaM: d, duracaoS: Math.round(d / 1.3) };
+  }
+}
+
+/** Indice do trecho da rota mais proximo de p, e a posicao projetada nele. */
+function projetarNaRota(p: { lat: number; lng: number }, rota: [number, number][]) {
+  const kx = 111320 * Math.cos((p.lat * Math.PI) / 180);
+  const ky = 110540;
+  let melhor = { i: 0, d: Infinity, ponto: rota[0] };
+  for (let i = 0; i < rota.length - 1; i++) {
+    const ax = (rota[i][0] - p.lng) * kx, ay = (rota[i][1] - p.lat) * ky;
+    const bx = (rota[i + 1][0] - p.lng) * kx, by = (rota[i + 1][1] - p.lat) * ky;
+    const dx = bx - ax, dy = by - ay;
+    const len = dx * dx + dy * dy;
+    const t = len ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len)) : 0;
+    const cx = ax + t * dx, cy = ay + t * dy;
+    const d = Math.hypot(cx, cy);
+    if (d < melhor.d) melhor = { i, d, ponto: [p.lng + cx / kx, p.lat + cy / ky] };
+  }
+  return melhor;
+}
+
+/** Trecho da rota entre o embarque e o desembarque (o pedaco que o passageiro vai junto). */
+export function trechoDaRota(rota: [number, number][], de: { lat: number; lng: number }, ate: { lat: number; lng: number }) {
+  if (rota.length < 2) return rota;
+  const a = projetarNaRota(de, rota);
+  const b = projetarNaRota(ate, rota);
+  if (b.i < a.i) return [];
+  return [a.ponto, ...rota.slice(a.i + 1, b.i + 1), b.ponto];
+}
+
+export function comprimentoM(coords: [number, number][]) {
+  let t = 0;
+  for (let i = 1; i < coords.length; i++)
+    t += distanciaM({ lng: coords[i - 1][0], lat: coords[i - 1][1] }, { lng: coords[i][0], lat: coords[i][1] });
+  return t;
+}
+
+/** Abre o caminho a pe no app de mapas do celular. */
+export function linkCaminhada(de: { lat: number; lng: number }, ate: { lat: number; lng: number }) {
+  return `https://www.google.com/maps/dir/?api=1&origin=${de.lat},${de.lng}&destination=${ate.lat},${ate.lng}&travelmode=walking`;
+}
+
+export function formatarMinutos(s: number) {
+  return `${Math.max(1, Math.round(s / 60))} min`;
+}

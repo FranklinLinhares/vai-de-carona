@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Protegido from "@/components/Protegido";
 import BuscaLocal from "@/components/BuscaLocal";
 import Mapa from "@/components/Mapa";
+import PlanoViagem from "@/components/PlanoViagem";
 import { Nota } from "@/components/Estrelas";
 import { supabase, mensagemErro, type Resultado, type ViagemDetalhe } from "@/lib/supabase";
 import { formatarHora, formatarReais, sugerirParada, nomeDoLocal, distanciaM, type Local, type Parada } from "@/lib/geo";
@@ -146,8 +147,15 @@ function Busca() {
       p_embarque_lat: parada?.lat ?? null,
       p_embarque_nome: parada?.nome ?? null,
     });
+    if (error) {
+      setOcupado(false);
+      return setErro(mensagemErro(error));
+    }
+    // guarda de onde voce sai e para onde vai, para mostrar o caminho a pe em Minhas caronas
+    await supabase.rpc("guardar_trajeto", {
+      p_viagem: r.viagem_id, origem_lng: origem.lng, origem_lat: origem.lat, destino_lng: destino.lng, destino_lat: destino.lat,
+    });
     setOcupado(false);
-    if (error) return setErro(mensagemErro(error));
     setEnviado(true);
     setTimeout(() => router.push("/minhas-caronas"), 1800);
   }
@@ -227,6 +235,9 @@ function Busca() {
               {r.vagas_livres} {r.vagas_livres === 1 ? "lugar" : "lugares"}
             </p>
             <p className="text-xs text-slate-500">Rota: {r.origem_nome} → {r.destino_nome}</p>
+            {aberto?.viagem_id !== r.viagem_id && (
+              <p className="mt-1 text-sm font-medium text-teal-700">Ver onde embarcar e descer ›</p>
+            )}
             {(r as Extra).grupo_nome && (
               <span className="mr-1 mt-1 inline-block rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-800">👥 {(r as Extra).grupo_nome}</span>
             )}
@@ -243,18 +254,17 @@ function Busca() {
 
           {aberto?.viagem_id === r.viagem_id && embarque && (
             <div className="space-y-3 pt-2">
-              <Mapa
-                altura={260}
-                rotas={rota ? [{ coordenadas: rota }] : []}
-                marcadores={[
-                  ...(origem ? [{ ...origem, cor: "#64748b", rotulo: "Você" }] : []),
-                  { ...embarque, cor: "#2563eb", rotulo: parada ? "🚏 Embarque" : "Embarque" },
-                  { lat: r.desembarque_lat, lng: r.desembarque_lng, cor: "#b91c1c", rotulo: "Desce" },
-                ]}
+              <PlanoViagem
+                rota={rota}
+                origem={origem}
+                destino={destino}
+                embarque={embarque}
+                embarqueNome={parada?.nome}
+                desembarque={{ lat: r.desembarque_lat, lng: r.desembarque_lng }}
               />
-              <p className="text-sm">
-                {parada ? <>Espere na <strong>{parada.nome}</strong>, que fica na rota do motorista.</> : <>Espere na rua marcada no mapa, que fica na rota do motorista.</>}{" "}
-                Chegue {REGRAS.folgaChegadaMin} min antes: o motorista espera no máximo {REGRAS.toleranciaEsperaMin} min.
+              <p className="rounded-lg bg-amber-50 p-2 text-sm text-amber-900">
+                Esteja no ponto às <strong>{formatarHora(new Date(new Date(r.embarque_previsto).getTime() - REGRAS.folgaChegadaMin * 60000).toISOString())}</strong>.
+                O motorista passa por volta das {formatarHora(r.embarque_previsto)} e espera no máximo {REGRAS.toleranciaEsperaMin} min.
               </p>
               {((r as Extra).paradas_ok?.length ?? 0) > 1 && (
                 <div className="space-y-1 text-sm">

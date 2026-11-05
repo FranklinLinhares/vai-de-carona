@@ -168,6 +168,7 @@ function Lista() {
                 embarqueNome={i.embarque_nome}
                 desembarque={{ lat: i.desembarque_lat, lng: i.desembarque_lng }}
                 carro={i.viagem.status === "em_andamento" ? posicoes[i.viagem_id] : null}
+                emViagem={i.viagem.status === "em_andamento"}
               />
             )}
 

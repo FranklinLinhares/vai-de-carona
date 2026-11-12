@@ -17,6 +17,7 @@ type ParadaViagem = { nome: string; lat: number; lng: number };
 type Extra = Resultado & {
   so_mulheres?: boolean;
   recorrente?: boolean;
+  ja_pedi?: boolean;
   grupo_nome?: string | null;
   paradas_ok?: (ParadaViagem & { caminhada: number })[]; // paradas do motorista ao alcance, mais perto primeiro
 };
@@ -82,10 +83,12 @@ function Busca() {
     let lista = (data as Resultado[]) ?? [];
     if (lista.length) {
       // genero das motoristas e viagens so para mulheres
-      const [{ data: ps }, { data: vs }] = await Promise.all([
+      const [{ data: ps }, { data: vs }, { data: minhas }] = await Promise.all([
         supabase.from("perfis").select("id,genero").in("id", [...new Set(lista.map((r) => r.motorista_id))]),
         supabase.from("viagens").select("id,so_mulheres,serie_id,grupo_id,paradas").in("id", lista.map((r) => r.viagem_id)),
+        supabase.from("reservas").select("viagem_id").eq("passageiro_id", perfil?.id ?? "").neq("status", "cancelada").in("viagem_id", lista.map((r) => r.viagem_id)),
       ]);
+      const jaPedi = new Set((minhas ?? []).map((m) => m.viagem_id));
       const genero = Object.fromEntries((ps ?? []).map((p) => [p.id, p.genero]));
       const soElas = new Set((vs ?? []).filter((v) => v.so_mulheres).map((v) => v.id));
       const recorrentes = new Set((vs ?? []).filter((v) => v.serie_id).map((v) => v.id));
@@ -110,7 +113,7 @@ function Busca() {
         .map((r) => ({ ...r, grupo_nome: nomeGrupo[infoViagem[r.viagem_id]?.grupo_id] ?? null }))
         .filter((r) => souMulher || !soElas.has(r.viagem_id))
         .filter((r) => !soMulheres || genero[r.motorista_id] === "feminino")
-        .map((r) => ({ ...r, so_mulheres: soElas.has(r.viagem_id), recorrente: recorrentes.has(r.viagem_id) }));
+        .map((r) => ({ ...r, so_mulheres: soElas.has(r.viagem_id), recorrente: recorrentes.has(r.viagem_id), ja_pedi: jaPedi.has(r.viagem_id) }));
     }
     setOcupado(false);
     setResultados(lista);
@@ -289,7 +292,9 @@ function Busca() {
                   Reservar toda semana (todas as próximas viagens deste motorista)
                 </label>
               )}
-              {enviado ? (
+              {(r as Extra).ja_pedi && !enviado ? (
+                <p className="rounded-lg bg-slate-100 p-3 text-center text-sm text-slate-700">Você já pediu esta carona. Acompanhe em Minhas caronas.</p>
+              ) : enviado ? (
                 <p className="rounded-lg bg-teal-50 p-3 text-center text-sm text-teal-800">Pedido enviado! Você será avisado quando o motorista aceitar.</p>
               ) : (
                 <button className="botao w-full py-3" disabled={ocupado} onClick={() => reservar(r)}>

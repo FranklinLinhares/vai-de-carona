@@ -106,7 +106,12 @@ function Formulario() {
         p_so_mulheres: soMulheres,
       });
       if (!erroSerie && (paradas.length || grupoId)) {
-        await supabase.rpc("configurar_serie", { p_serie: serieId, p_paradas: paradas.length ? paradas : null, p_grupo: grupoId || null });
+        const { error: e3 } = await supabase.rpc("configurar_serie", { p_serie: serieId, p_paradas: paradas.length ? paradas : null, p_grupo: grupoId || null });
+        if (e3) {
+          await supabase.rpc("encerrar_serie", { p_serie: serieId });
+          setOcupado(false);
+          return setErro(mensagemErro(e3));
+        }
       }
       setOcupado(false);
       if (erroSerie) return setErro(mensagemErro(erroSerie));
@@ -128,6 +133,8 @@ function Formulario() {
         .update({ so_mulheres: soMulheres, paradas: paradas.length ? paradas : null, grupo_id: grupoId || null })
         .eq("id", novaId as string);
       if (e2) {
+        // nao deixa a viagem publicada sem as restricoes escolhidas
+        await supabase.from("viagens").update({ status: "cancelada" }).eq("id", novaId as string);
         setOcupado(false);
         return setErro(mensagemErro(e2));
       }

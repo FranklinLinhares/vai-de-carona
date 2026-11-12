@@ -87,7 +87,7 @@ export type Resultado = {
 
 // Colunas de perfis visiveis para outros usuarios (CPF e CNH ficam ocultos)
 export const COLUNAS_PUBLICAS_PERFIL =
-  "id,nome,telefone,foto_url,carro_modelo,carro_cor,carro_placa,chave_pix,nota_media,total_avaliacoes,suspenso,genero";
+  "id,nome,foto_url,carro_modelo,carro_cor,carro_placa,chave_pix,nota_media,total_avaliacoes,suspenso,genero";
 
 export function mensagemErro(e: unknown): string {
   if (e && typeof e === "object" && "message" in e) return String((e as { message: string }).message);

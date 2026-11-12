@@ -59,7 +59,7 @@ function Lista() {
       });
       Object.values(agrupado).forEach((l) => l.sort((a, b) => a.embarque_previsto.localeCompare(b.embarque_previsto)));
       setReservas(agrupado);
-    }
+    } else setReservas({});
     setCarregando(false);
   }, [perfil]);
 

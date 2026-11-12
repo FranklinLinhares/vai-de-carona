@@ -50,7 +50,7 @@ export function Avaliar({
     onFeito?.();
   }
 
-  if (estado === "ok") return <p className="text-sm text-teal-700">Obrigado pela avaliação de {nome}!</p>;
+  if (estado === "ok") return <p className="text-sm text-[var(--mar)]">Obrigado pela avaliação de {nome}!</p>;
 
   return (
     <div className="rounded-lg bg-amber-50 p-3">

@@ -55,7 +55,7 @@ export default function MapaBase({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {linhas.map((l, i) => (
-          <Polyline key={i} positions={l.latlng} pathOptions={{ color: l.cor ?? "#0f766e", weight: l.peso ?? 5, opacity: l.opacidade ?? 0.85, dashArray: l.tracejada ? "2 9" : undefined, lineCap: "round" }} />
+          <Polyline key={i} positions={l.latlng} pathOptions={{ color: l.cor ?? "#0b5d57", weight: l.peso ?? 5, opacity: l.opacidade ?? 0.85, dashArray: l.tracejada ? "2 9" : undefined, lineCap: "round" }} />
         ))}
         {marcadores.map((m, i) =>
           m.icone ? (

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSessao } from "./Sessao";
 import { supabase } from "@/lib/supabase";
+import Icone from "./Icone";
 import { ativarAvisos, renovarAvisos } from "@/lib/push";
 
 type Notificacao = { id: string; titulo: string; texto: string; link: string | null; lida: boolean; criado_em: string };
@@ -76,13 +77,13 @@ export default function Notificacoes() {
   }
 
   return (
-    <div className="fixed right-3 top-3 z-[1200]">
+    <div className="relative">
       <button
         onClick={() => setAberto(!aberto)}
-        className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white text-xl shadow-md"
+        className="relative flex h-10 w-10 items-center justify-center rounded-full text-[var(--tinta)] hover:bg-slate-100"
         aria-label="Avisos"
       >
-        🔔
+        <Icone nome="sino" />
         {naoLidas > 0 && (
           <span className="absolute -right-0.5 -top-0.5 min-w-5 rounded-full bg-red-600 px-1 text-center text-xs font-bold text-white">{naoLidas}</span>
         )}
@@ -91,11 +92,11 @@ export default function Notificacoes() {
         <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
           <div className="flex items-center justify-between border-b border-slate-100 p-3">
             <p className="font-semibold">Avisos</p>
-            {naoLidas > 0 && <button className="text-xs text-teal-700" onClick={marcarTodas}>Marcar todos como lidos</button>}
+            {naoLidas > 0 && <button className="text-xs text-[var(--mar)]" onClick={marcarTodas}>Marcar todos como lidos</button>}
           </div>
           {permissao === "default" && (
             <button
-              className="block w-full bg-teal-50 p-3 text-left text-sm text-teal-800"
+              className="block w-full bg-[var(--mar-claro)] p-3 text-left text-sm text-[var(--mar)]"
               onClick={async () => {
                 await ativarAvisos(perfil.id).catch(() => {});
                 setPermissao(Notification.permission);

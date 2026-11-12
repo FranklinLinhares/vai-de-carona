@@ -146,13 +146,13 @@ function Formulario() {
 
   const marcadores = [
     ...paradas.map((p, i) => ({ ...p, cor: "#2563eb", rotulo: `🚏 ${i + 1}` })),
-    ...(origem ? [{ ...origem, cor: "#0f766e", rotulo: "Saída" }] : []),
+    ...(origem ? [{ ...origem, cor: "#0b5d57", rotulo: "Saída" }] : []),
     ...(destino ? [{ ...destino, cor: "#b91c1c", rotulo: "Destino" }] : []),
   ];
 
   return (
     <div className="space-y-4 p-4">
-      <h1 className="text-2xl font-bold">Oferecer carona</h1>
+      <h1 className="titulo-pagina">Oferecer carona</h1>
       <div className="cartao space-y-3">
         <BuscaLocal rotulo="Saindo de" valor={origem} permitirLocalizacao onEscolher={(l) => { setOrigem(l); calcular(l, destino); }} />
         <BuscaLocal rotulo="Indo para" valor={destino} onEscolher={(l) => { setDestino(l); calcular(origem, l); }} />
@@ -174,7 +174,7 @@ function Formulario() {
       <div className="cartao grid grid-cols-2 gap-3">
         <div className="col-span-2">
           <label className="flex items-center gap-2 text-sm font-medium">
-            <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={repetir} onChange={(e) => setRepetir(e.target.checked)} />
+            <input type="checkbox" className="h-5 w-5 accent-[var(--mar)]" checked={repetir} onChange={(e) => setRepetir(e.target.checked)} />
             🔁 Repetir toda semana
           </label>
         </div>
@@ -188,7 +188,7 @@ function Formulario() {
                     key={d}
                     type="button"
                     onClick={() => setDias(dias.includes(d) ? dias.filter((x) => x !== d) : [...dias, d].sort())}
-                    className={`h-10 flex-1 rounded-lg text-sm font-semibold ${dias.includes(d) ? "bg-teal-700 text-white" : "border border-slate-300 bg-white text-slate-600"}`}
+                    className={`h-10 flex-1 rounded-lg text-sm font-semibold ${dias.includes(d) ? "bg-[var(--mar)] text-white" : "border border-slate-300 bg-white text-slate-600"}`}
                     aria-label={["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"][d]}
                   >
                     {l}
@@ -258,7 +258,7 @@ function Formulario() {
       )}
       {perfil?.genero === "feminino" && (
         <label className="cartao flex items-center gap-2 text-sm">
-          <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={soMulheres} onChange={(e) => setSoMulheres(e.target.checked)} />
+          <input type="checkbox" className="h-5 w-5 accent-[var(--mar)]" checked={soMulheres} onChange={(e) => setSoMulheres(e.target.checked)} />
           Levar só passageiras mulheres
         </label>
       )}

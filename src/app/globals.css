@@ -1,30 +1,62 @@
 @import "tailwindcss";
 
+/* Identidade do Cadê a carona */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --mar: #0b5d57;        /* verde-mar: marca, botoes, rota */
+  --mar-escuro: #08443f;
+  --mar-claro: #e6f2f0;
+  --sol: #ffb800;        /* amarelo-sol: destaques, preco */
+  --sol-claro: #fff4d6;
+  --tinta: #10201e;      /* texto principal */
+  --cinza: #5b6b69;      /* texto secundario */
+  --linha: #e3e9e8;      /* bordas */
+  --fundo: #f3f6f5;
+  --background: var(--fundo);
+  --foreground: var(--tinta);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--fundo);
+  color: var(--tinta);
   font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
+
+h1, h2, h3 { letter-spacing: -0.01em; }
 
 @layer components {
   .campo {
-    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100;
+    @apply w-full rounded-xl border border-[var(--linha)] bg-white px-3.5 py-3 text-[15px] outline-none transition placeholder:text-slate-400 focus:border-[var(--mar)] focus:ring-4 focus:ring-[var(--mar-claro)];
   }
   .botao {
-    @apply rounded-lg bg-teal-700 px-4 py-2 font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--mar)] px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-[var(--mar-escuro)] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none;
+  }
+  .botao-sol {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--sol)] px-4 py-3 font-bold text-[var(--tinta)] shadow-sm transition hover:brightness-95 active:scale-[0.98] disabled:opacity-50;
   }
   .botao-secundario {
-    @apply rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--linha)] bg-white px-3 py-2 text-sm font-semibold text-[var(--tinta)] transition hover:bg-slate-50 active:scale-[0.98] disabled:opacity-50;
   }
   .botao-perigo {
-    @apply rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 font-semibold text-white transition hover:bg-red-700 active:scale-[0.98];
   }
   .cartao {
-    @apply rounded-2xl border border-slate-200 bg-white p-4 shadow-sm;
+    @apply rounded-2xl border border-[var(--linha)] bg-white p-4 shadow-[0_1px_2px_rgba(16,32,30,0.04),0_4px_16px_rgba(16,32,30,0.04)];
   }
+  .titulo-pagina {
+    @apply text-[26px] font-extrabold tracking-tight text-[var(--tinta)];
+  }
+  .selo {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+}
+
+/* Mapa: rotulos no estilo do app */
+.leaflet-tooltip {
+  border-radius: 9999px !important;
+  border: none !important;
+  padding: 2px 10px !important;
+  font-family: var(--font-sans), system-ui, sans-serif !important;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(16, 32, 30, 0.18) !important;
 }

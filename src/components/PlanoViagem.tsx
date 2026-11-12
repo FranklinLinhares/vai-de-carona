@@ -125,7 +125,7 @@ export default function PlanoViagem({
         semBorda
         rotas={[
           ...(rota ? [{ coordenadas: rota, cor: "#94a3b8", peso: 4, opacidade: 0.5 }] : []),
-          ...(trecho.length > 1 ? [{ coordenadas: trecho, cor: "#0f766e", peso: 6, opacidade: 0.95 }] : []),
+          ...(trecho.length > 1 ? [{ coordenadas: trecho, cor: "#0b5d57", peso: 6, opacidade: 0.95 }] : []),
           ...(ida && !noPonto ? [{ coordenadas: ida.coordenadas, cor: "#2563eb", tracejada: true, peso: 5 }] : []),
           ...(volta ? [{ coordenadas: volta.coordenadas, cor: "#b91c1c", tracejada: true, peso: 5 }] : []),
         ]}

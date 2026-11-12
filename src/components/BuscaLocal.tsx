@@ -1,5 +1,6 @@
 "use client";
 
+import Icone from "./Icone";
 import { useEffect, useRef, useState } from "react";
 import { buscarEndereco, nomeDoLocal, type Local } from "@/lib/geo";
 
@@ -66,7 +67,7 @@ export default function BuscaLocal({
 
   return (
     <div className="relative">
-      <label className="mb-1 block text-sm font-medium text-slate-700">{rotulo}</label>
+      <label className="mb-1.5 block text-sm font-semibold text-[var(--tinta)]">{rotulo}</label>
       <div className="flex gap-2">
         <input
           className="campo flex-1"
@@ -75,8 +76,8 @@ export default function BuscaLocal({
           onChange={(e) => digitar(e.target.value)}
         />
         {permitirLocalizacao && (
-          <button type="button" onClick={usarLocalizacao} className="botao-secundario whitespace-nowrap" title="Usar minha localização">
-            📍 Aqui
+          <button type="button" onClick={usarLocalizacao} className="botao-secundario whitespace-nowrap px-3 text-[var(--mar)]" title="Usar minha localização">
+            <Icone nome="local" className="h-5 w-5" /> Aqui
           </button>
         )}
       </div>
@@ -86,17 +87,18 @@ export default function BuscaLocal({
       )}
       {erro && <p className="mt-1 text-xs text-red-600">{erro}</p>}
       {opcoes.length > 0 && !valor && (
-        <ul className="absolute z-[1000] mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+        <ul className="absolute z-[1000] mt-1 w-full overflow-hidden rounded-xl border border-[var(--linha)] bg-white shadow-xl">
           {opcoes.map((o, i) => (
             <li key={i}>
               <button
                 type="button"
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-teal-50"
+                className="flex w-full items-center gap-2 border-b border-[var(--linha)] px-3 py-3 text-left text-sm last:border-0 hover:bg-[var(--mar-claro)]"
                 onClick={() => {
                   onEscolher(o);
                   setOpcoes([]);
                 }}
               >
+                <Icone nome="carona" className="h-4 w-4 shrink-0 text-[var(--cinza)]" />
                 {o.nome}
               </button>
             </li>

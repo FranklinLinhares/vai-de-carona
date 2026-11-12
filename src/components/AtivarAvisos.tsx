@@ -35,9 +35,9 @@ export default function AtivarAvisos({ motivo }: { motivo: string }) {
     );
 
   return (
-    <div className="cartao flex items-center gap-3 border-teal-200 bg-teal-50">
+    <div className="cartao flex items-center gap-3 border-[var(--mar-claro)] bg-[var(--mar-claro)]">
       <span className="text-2xl">🔔</span>
-      <p className="flex-1 text-sm text-teal-900">Ative os avisos para saber {motivo}, mesmo com o app fechado.</p>
+      <p className="flex-1 text-sm text-[var(--mar)]">Ative os avisos para saber {motivo}, mesmo com o app fechado.</p>
       <button
         className="botao text-sm"
         disabled={ocupado}

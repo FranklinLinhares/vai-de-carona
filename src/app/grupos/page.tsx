@@ -83,7 +83,7 @@ function Grupos() {
 
   return (
     <div className="space-y-4 p-4">
-      <h1 className="text-2xl font-bold">Grupos</h1>
+      <h1 className="titulo-pagina">Grupos</h1>
       <p className="text-sm text-slate-600">
         Crie um grupo da sua empresa, faculdade ou condomínio. Caronas marcadas para o grupo só aparecem para quem participa dele.
       </p>
@@ -120,7 +120,7 @@ function Grupos() {
       </form>
 
       {erro && <p className="text-sm text-red-600">{erro}</p>}
-      {msg && <p className="text-sm text-teal-700">{msg}</p>}
+      {msg && <p className="text-sm text-[var(--mar)]">{msg}</p>}
     </div>
   );
 }

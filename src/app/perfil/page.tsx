@@ -74,7 +74,7 @@ export default function PaginaPerfil() {
   return (
     <div className="p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Meu perfil</h1>
+        <h1 className="titulo-pagina">Meu perfil</h1>
         {perfil && <Nota nota={perfil.nota_media} total={perfil.total_avaliacoes} />}
       </div>
       <form onSubmit={salvar} className="space-y-4">
@@ -109,7 +109,7 @@ export default function PaginaPerfil() {
 
         <section className="cartao space-y-3">
           <label className="flex items-center gap-2 font-medium">
-            <input type="checkbox" checked={motorista} onChange={(e) => setMotorista(e.target.checked)} className="h-5 w-5 accent-teal-700" />
+            <input type="checkbox" checked={motorista} onChange={(e) => setMotorista(e.target.checked)} className="h-5 w-5 accent-[var(--mar)]" />
             Também quero oferecer caronas
           </label>
           {motorista && (
@@ -126,7 +126,7 @@ export default function PaginaPerfil() {
         </section>
 
         {erro && <p className="text-sm text-red-600">{erro}</p>}
-        {msg && <p className="text-sm text-teal-700">{msg}</p>}
+        {msg && <p className="text-sm text-[var(--mar)]">{msg}</p>}
         <button className="botao w-full">Salvar</button>
         <Link href="/grupos" className="botao-secundario block w-full text-center">👥 Meus grupos</Link>
         <button type="button" className="botao-secundario w-full" onClick={() => supabase.auth.signOut()}>

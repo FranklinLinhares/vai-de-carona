@@ -167,7 +167,7 @@ function Busca() {
 
   return (
     <div className="space-y-4 p-4">
-      <h1 className="text-2xl font-bold">Pegar carona</h1>
+      <h1 className="titulo-pagina">Pegar carona</h1>
       <div className="cartao space-y-3">
         <BuscaLocal rotulo="Estou em" valor={origem} permitirLocalizacao onEscolher={setOrigem} />
         <BuscaLocal rotulo="Quero ir para" valor={destino} onEscolher={setDestino} />
@@ -204,7 +204,7 @@ function Busca() {
         )}
         {perfil?.genero === "feminino" && (
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={soMulheres} onChange={(e) => setSoMulheres(e.target.checked)} />
+            <input type="checkbox" className="h-5 w-5 accent-[var(--mar)]" checked={soMulheres} onChange={(e) => setSoMulheres(e.target.checked)} />
             Só motoristas mulheres
           </label>
         )}
@@ -222,7 +222,7 @@ function Busca() {
       )}
 
       {resultados?.map((r) => (
-        <article key={r.viagem_id} className={`cartao space-y-2 ${aberto?.viagem_id === r.viagem_id ? "border-teal-600" : ""}`}>
+        <article key={r.viagem_id} className={`cartao space-y-2 ${aberto?.viagem_id === r.viagem_id ? "border-[var(--mar)]" : ""}`}>
           <button className="block w-full text-left" onClick={() => abrir(r)}>
             <div className="flex items-start justify-between">
               <div>
@@ -231,7 +231,7 @@ function Busca() {
                   🚶 {r.caminhada_embarque_m} m até a rota · desce a {r.caminhada_desembarque_m} m do destino
                 </p>
               </div>
-              <p className="font-semibold text-teal-700">{formatarReais(r.tarifa)}</p>
+              <p className="font-semibold text-[var(--mar)]">{formatarReais(r.tarifa)}</p>
             </div>
             <p className="mt-1 text-sm">
               {r.motorista_nome.split(" ")[0]} <Nota nota={r.motorista_nota} total={r.motorista_total_avaliacoes} /> · {r.carro} ·{" "}
@@ -239,7 +239,7 @@ function Busca() {
             </p>
             <p className="text-xs text-slate-500">Rota: {r.origem_nome} → {r.destino_nome}</p>
             {aberto?.viagem_id !== r.viagem_id && (
-              <p className="mt-1 text-sm font-medium text-teal-700">Ver onde embarcar e descer ›</p>
+              <p className="mt-1 text-sm font-medium text-[var(--mar)]">Ver onde embarcar e descer ›</p>
             )}
             {(r as Extra).grupo_nome && (
               <span className="mr-1 mt-1 inline-block rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-800">👥 {(r as Extra).grupo_nome}</span>
@@ -248,7 +248,7 @@ function Busca() {
               <span className="mr-1 mt-1 inline-block rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-800">🚏 Paradas do motorista</span>
             )}
             {(r as Extra).recorrente && (
-              <span className="mr-1 mt-1 inline-block rounded-full bg-teal-50 px-2 py-0.5 text-xs text-teal-800">🔁 Repete toda semana</span>
+              <span className="mr-1 mt-1 inline-block rounded-full bg-[var(--mar-claro)] px-2 py-0.5 text-xs text-[var(--mar)]">🔁 Repete toda semana</span>
             )}
             {(r as Extra).so_mulheres && (
               <span className="mt-1 inline-block rounded-full bg-pink-100 px-2 py-0.5 text-xs text-pink-800">Só mulheres</span>
@@ -277,7 +277,7 @@ function Busca() {
                       <input
                         type="radio"
                         name={`parada-${r.viagem_id}`}
-                        className="accent-teal-700"
+                        className="accent-[var(--mar)]"
                         checked={parada?.lat === p.lat && parada?.lng === p.lng}
                         onChange={() => setParada(p)}
                       />
@@ -288,14 +288,14 @@ function Busca() {
               )}
               {(r as Extra).recorrente && !enviado && (
                 <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={semanal} onChange={(e) => setSemanal(e.target.checked)} />
+                  <input type="checkbox" className="h-5 w-5 accent-[var(--mar)]" checked={semanal} onChange={(e) => setSemanal(e.target.checked)} />
                   Reservar toda semana (todas as próximas viagens deste motorista)
                 </label>
               )}
               {(r as Extra).ja_pedi && !enviado ? (
                 <p className="rounded-lg bg-slate-100 p-3 text-center text-sm text-slate-700">Você já pediu esta carona. Acompanhe em Minhas caronas.</p>
               ) : enviado ? (
-                <p className="rounded-lg bg-teal-50 p-3 text-center text-sm text-teal-800">Pedido enviado! Você será avisado quando o motorista aceitar.</p>
+                <p className="rounded-lg bg-[var(--mar-claro)] p-3 text-center text-sm text-[var(--mar)]">Pedido enviado! Você será avisado quando o motorista aceitar.</p>
               ) : (
                 <button className="botao w-full py-3" disabled={ocupado} onClick={() => reservar(r)}>
                   Pedir carona por {formatarReais(r.tarifa)}

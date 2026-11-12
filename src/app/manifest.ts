@@ -7,13 +7,13 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Carona na rota de quem já está indo, pelo preço do ônibus.",
     start_url: "/",
     display: "standalone",
-    background_color: "#f8fafc",
-    theme_color: "#0f766e",
+    background_color: "#f3f6f5",
+    theme_color: "#0b5d57",
     lang: "pt-BR",
     icons: [
       { src: "/icone-192.png", sizes: "192x192", type: "image/png" },
       { src: "/icone-512.png", sizes: "512x512", type: "image/png" },
-      { src: "/icone-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/icone-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }

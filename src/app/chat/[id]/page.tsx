@@ -99,9 +99,9 @@ function Chat() {
           const minha = m.autor_id === perfil?.id;
           return (
             <div key={m.id} className={`flex ${minha ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${minha ? "bg-teal-700 text-white" : "bg-white text-slate-800 shadow-sm"}`}>
+              <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${minha ? "bg-[var(--mar)] text-white" : "bg-white text-slate-800 shadow-sm"}`}>
                 <p className="whitespace-pre-wrap">{m.texto}</p>
-                <p className={`mt-0.5 text-right text-[10px] ${minha ? "text-teal-100" : "text-slate-400"}`}>{formatarHora(m.criado_em)}</p>
+                <p className={`mt-0.5 text-right text-[10px] ${minha ? "text-white/70" : "text-slate-400"}`}>{formatarHora(m.criado_em)}</p>
               </div>
             </div>
           );

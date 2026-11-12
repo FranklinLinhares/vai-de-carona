@@ -35,5 +35,5 @@ export default function CompartilharPosicao({ viagemId }: { viagemId: string }) 
     negado: "📍 Permita o acesso à localização para os passageiros verem o carro.",
     sem_gps: "📍 Este aparelho não compartilha localização.",
   }[estado];
-  return <p className={`w-full text-sm ${estado === "ok" ? "text-teal-700" : "text-amber-700"}`}>{texto}</p>;
+  return <p className={`w-full text-sm ${estado === "ok" ? "text-[var(--mar)]" : "text-amber-700"}`}>{texto}</p>;
 }

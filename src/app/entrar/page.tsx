@@ -47,7 +47,7 @@ export default function Entrar() {
 
   return (
     <div className="p-4">
-      <h1 className="mb-4 text-2xl font-bold">{modo === "cadastrar" ? "Criar conta" : "Entrar"}</h1>
+      <h1 className="titulo-pagina mb-4">{modo === "cadastrar" ? "Criar conta" : "Entrar"}</h1>
       <div className="mb-3 grid grid-cols-2 rounded-lg bg-slate-100 p-1 text-sm font-medium">
         {(["cadastrar", "entrar"] as const).map((m) => (
           <button
@@ -74,7 +74,7 @@ export default function Entrar() {
         </button>
       </form>
       {modo === "entrar" && (
-        <button type="button" className="mt-3 w-full text-center text-sm text-teal-700 underline" onClick={esqueci} disabled={ocupado}>
+        <button type="button" className="mt-3 w-full text-center text-sm text-[var(--mar)] underline" onClick={esqueci} disabled={ocupado}>
           Esqueci minha senha
         </button>
       )}

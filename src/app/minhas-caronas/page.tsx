@@ -114,20 +114,20 @@ function Lista() {
     if (i.aprovacao === "recusada") return { texto: "Recusada", cor: "bg-red-100 text-red-700" };
     if (i.status === "cancelada") return { texto: "Cancelada", cor: "bg-slate-100 text-slate-600" };
     if (i.viagem.status === "em_andamento") return { texto: "Em andamento", cor: "bg-blue-100 text-blue-800" };
-    if (i.status === "concluida") return { texto: "Concluída", cor: "bg-teal-100 text-teal-800" };
+    if (i.status === "concluida") return { texto: "Concluída", cor: "bg-[var(--mar-claro)] text-[var(--mar)]" };
     if (i.aprovacao === "pendente") return { texto: "Aguardando o motorista", cor: "bg-slate-100 text-slate-700" };
     return { texto: "Confirmada", cor: "bg-amber-100 text-amber-800" };
   };
 
   return (
     <div className="space-y-4 p-4">
-      <h1 className="text-2xl font-bold">Minhas caronas</h1>
+      <h1 className="titulo-pagina">Minhas caronas</h1>
       <AtivarAvisos motivo="quando o motorista aceitar, mandar mensagem e sair para buscar você" />
       {erro && <p className="text-sm text-red-600">{erro}</p>}
       {carregando && <p className="text-slate-500">Carregando…</p>}
       {!carregando && itens.length === 0 && (
         <div className="cartao text-center text-slate-600">
-          Nenhuma carona reservada. <Link href="/carona" className="text-teal-700 underline">Buscar carona</Link>
+          Nenhuma carona reservada. <Link href="/carona" className="text-[var(--mar)] underline">Buscar carona</Link>
         </div>
       )}
       {itens.map((i) => {
@@ -141,7 +141,7 @@ function Lista() {
                 <p className="text-xs uppercase text-slate-500">{formatarData(i.embarque_previsto)}</p>
                 <p className="text-lg font-semibold">Embarque às {formatarHora(i.embarque_previsto)}</p>
                 <p className="text-sm text-slate-600">{i.embarque_nome ?? "Ponto na rota do motorista"}</p>
-                {i.recorrente_id && <p className="text-xs text-teal-700">🔁 Reserva semanal</p>}
+                {i.recorrente_id && <p className="text-xs text-[var(--mar)]">🔁 Reserva semanal</p>}
               </div>
               <span className={`rounded-full px-2 py-1 text-xs ${s.cor}`}>{s.texto}</span>
             </div>
@@ -186,7 +186,7 @@ function Lista() {
                   </p>
                 )}
                 {i.motorista.chave_pix && (
-                  <div className="flex items-center justify-between rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm">
+                  <div className="flex items-center justify-between rounded-lg border border-[var(--mar-claro)] bg-[var(--mar-claro)] p-3 text-sm">
                     <span>
                       Pix de <strong>{formatarReais(i.viagem.tarifa)}</strong>: {i.motorista.chave_pix}
                     </span>

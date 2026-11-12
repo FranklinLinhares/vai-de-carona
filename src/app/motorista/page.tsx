@@ -98,7 +98,7 @@ function Lista() {
   return (
     <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Minhas viagens</h1>
+        <h1 className="titulo-pagina">Minhas viagens</h1>
         <Link href="/motorista/nova" className="botao text-sm">+ Nova viagem</Link>
       </div>
       <AtivarAvisos motivo="na hora que um passageiro pedir carona" />
@@ -142,7 +142,7 @@ function Lista() {
             />
             <p className="text-sm">
               {rs.length} de {v.vagas} lugares reservados · {formatarReais(v.tarifa)} por pessoa
-              {v.serie_id && <span className="ml-2 rounded-full bg-teal-50 px-2 py-0.5 text-xs text-teal-800">🔁 Recorrente</span>}
+              {v.serie_id && <span className="ml-2 rounded-full bg-[var(--mar-claro)] px-2 py-0.5 text-xs text-[var(--mar)]">🔁 Recorrente</span>}
               {v.so_mulheres && <span className="ml-2 rounded-full bg-pink-100 px-2 py-0.5 text-xs text-pink-800">Só mulheres</span>}
             </p>
             {rs.length > 0 && (
@@ -157,13 +157,13 @@ function Lista() {
                       <div className="flex-1">
                         <p className="font-medium">
                           {i + 1}. {r.passageiro?.nome}
-                          {r.recorrente_id && <span className="ml-1 text-xs text-teal-700">🔁 toda semana</span>}
+                          {r.recorrente_id && <span className="ml-1 text-xs text-[var(--mar)]">🔁 toda semana</span>}
                         </p>
                         <Nota nota={r.passageiro?.nota_media ?? null} total={r.passageiro?.total_avaliacoes ?? 0} />
                         <p className="text-slate-600">
                           Embarque às {formatarHora(r.embarque_previsto)}
                           {r.embarque_nome ? ` · ${r.embarque_nome}` : ""} ·{" "}
-                          <a className="text-teal-700 underline" href={linkMapa(r.embarque_lat, r.embarque_lng)} target="_blank">ver ponto</a>
+                          <a className="text-[var(--mar)] underline" href={linkMapa(r.embarque_lat, r.embarque_lng)} target="_blank">ver ponto</a>
                         </p>
                       </div>
                       <Link href={`/chat/${r.id}`} className="botao-secundario">💬 Chat</Link>

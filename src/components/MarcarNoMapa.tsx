@@ -14,18 +14,18 @@ export default function MarcarNoMapa({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
-      <span className="text-slate-600">Tocar no mapa para marcar:</span>
+      <span className="text-[var(--cinza)]">Ou toque no mapa:</span>
       {(Object.keys(rotulos) as Modo[]).map((m) => (
         <button
           key={m}
           type="button"
           onClick={() => onMudar(marcando === m ? null : m)}
-          className={marcando === m ? "botao py-1 text-sm" : "botao-secundario py-1"}
+          className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${marcando === m ? "bg-[var(--mar)] text-white" : "bg-[var(--mar-claro)] text-[var(--mar)]"}`}
         >
           {rotulos[m]}
         </button>
       ))}
-      {marcando && <span className="w-full text-xs text-teal-700">Toque no mapa onde fica o ponto de {rotulos[marcando]?.toLowerCase()}.</span>}
+      {marcando && <span className="w-full text-xs text-[var(--mar)]">Toque no mapa onde fica o ponto de {rotulos[marcando]?.toLowerCase()}.</span>}
     </div>
   );
 }

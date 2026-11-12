@@ -32,7 +32,7 @@ export default function NovaSenha() {
 
   return (
     <div className="p-4">
-      <h1 className="mb-4 text-2xl font-bold">Nova senha</h1>
+      <h1 className="titulo-pagina mb-4">Nova senha</h1>
       {!pronto ? (
         <p className="cartao text-slate-600">Abrindo o link do e-mail… Se não carregar, peça um novo link em Entrar, “Esqueci minha senha”.</p>
       ) : (

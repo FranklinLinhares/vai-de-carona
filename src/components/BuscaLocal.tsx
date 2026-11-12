@@ -21,6 +21,7 @@ export default function BuscaLocal({
   const [erro, setErro] = useState("");
   const [semResultado, setSemResultado] = useState(false);
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const busca = useRef<AbortController | null>(null);
 
   useEffect(() => {
     setTexto(valor?.nome ?? "");
@@ -32,18 +33,27 @@ export default function BuscaLocal({
     setSemResultado(false);
     if (valor) onEscolher(null);
     if (temporizador.current) clearTimeout(temporizador.current);
+    busca.current?.abort(); // descarta a busca anterior: so vale a do texto atual
+    if (t.trim().length < 3) {
+      setOpcoes([]);
+      setCarregando(false);
+      return;
+    }
     temporizador.current = setTimeout(async () => {
+      const controle = new AbortController();
+      busca.current = controle;
       setCarregando(true);
       try {
-        const r = await buscarEndereco(t);
+        const r = await buscarEndereco(t, { sinal: controle.signal, parcial: setOpcoes });
+        if (controle.signal.aborted) return;
         setOpcoes(r);
-        setSemResultado(t.trim().length >= 3 && r.length === 0);
+        setSemResultado(r.length === 0);
       } catch {
-        setErro("Busca indisponível no momento");
+        if (!controle.signal.aborted) setErro("Busca indisponível no momento");
       } finally {
-        setCarregando(false);
+        if (!controle.signal.aborted) setCarregando(false);
       }
-    }, 600); // Nominatim pede no maximo 1 requisicao por segundo
+    }, 350);
   }
 
   function usarLocalizacao() {

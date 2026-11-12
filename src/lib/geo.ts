@@ -11,14 +11,14 @@ type FeaturePhoton = {
 };
 
 /** Photon: busca tolerante a nomes parciais e bom para lugares (orgaos, lojas, escolas). */
-async function buscarPhoton(texto: string): Promise<Local[]> {
+async function buscarPhoton(texto: string, sinal?: AbortSignal): Promise<Local[]> {
   const [o, n, l, s] = CIDADE.viewbox;
   const [lat, lng] = CIDADE.centro;
   const params = new URLSearchParams({
     q: texto, limit: "8", lat: String(lat), lon: String(lng),
     bbox: `${o},${s},${l},${n}`, location_bias_scale: "0.5",
   });
-  const r = await fetch(`${SERVICOS.photon}/api/?${params}`);
+  const r = await fetch(`${SERVICOS.photon}/api/?${params}`, { signal: sinal });
   if (!r.ok) return [];
   const d: { features: FeaturePhoton[] } = await r.json();
   return d.features.map((f) => {
@@ -31,13 +31,19 @@ async function buscarPhoton(texto: string): Promise<Local[]> {
 }
 
 /** Nominatim: bom para enderecos completos. */
-async function buscarNominatim(texto: string): Promise<Local[]> {
+let ultimoNominatim = 0;
+async function buscarNominatim(texto: string, sinal?: AbortSignal): Promise<Local[]> {
+  // o servidor publico aceita no maximo 1 pedido por segundo: espera a vez (e desiste se o texto mudou)
+  const espera = ultimoNominatim + 1100 - Date.now();
+  if (espera > 0) await new Promise((ok) => setTimeout(ok, espera));
+  if (sinal?.aborted) return [];
+  ultimoNominatim = Date.now();
   const [o, n, l, s] = CIDADE.viewbox;
   const params = new URLSearchParams({
     q: texto, format: "jsonv2", limit: "6", countrycodes: "br",
     viewbox: `${o},${n},${l},${s}`, bounded: "1", "accept-language": "pt-BR",
   });
-  const r = await fetch(`${SERVICOS.nominatim}/search?${params}`);
+  const r = await fetch(`${SERVICOS.nominatim}/search?${params}`, { signal: sinal });
   if (!r.ok) return [];
   const dados: { display_name: string; lat: string; lon: string }[] = await r.json();
   return dados.map((d) => ({
@@ -47,19 +53,41 @@ async function buscarNominatim(texto: string): Promise<Local[]> {
   }));
 }
 
-/** Busca enderecos e lugares dentro de Joao Pessoa, juntando as duas fontes. */
-export async function buscarEndereco(texto: string): Promise<Local[]> {
-  if (texto.trim().length < 3) return [];
-  const [a, b] = await Promise.allSettled([buscarPhoton(texto), buscarNominatim(texto)]);
-  const todos = [
-    ...(a.status === "fulfilled" ? a.value : []),
-    ...(b.status === "fulfilled" ? b.value : []),
-  ];
-  if (a.status === "rejected" && b.status === "rejected") throw new Error("Busca indisponível");
+function juntar(listas: Local[][]) {
   // remove repetidos (mesmo ponto a menos de ~50 m)
   const unicos: Local[] = [];
-  for (const l of todos) if (!unicos.some((u) => distanciaM(u, l) < 50)) unicos.push(l);
+  for (const l of listas.flat()) if (!unicos.some((u) => distanciaM(u, l) < 50)) unicos.push(l);
   return unicos.slice(0, 8);
+}
+
+const cache = new Map<string, Local[]>();
+
+/**
+ * Busca enderecos e lugares dentro de Joao Pessoa.
+ * Mostra logo o resultado do Photon (rapido) e completa com o Nominatim quando ele responder.
+ */
+export async function buscarEndereco(
+  texto: string,
+  opcoes: { sinal?: AbortSignal; parcial?: (r: Local[]) => void } = {},
+): Promise<Local[]> {
+  const chave = texto.trim().toLowerCase();
+  if (chave.length < 3) return [];
+  const guardado = cache.get(chave);
+  if (guardado) return guardado;
+  const { sinal, parcial } = opcoes;
+  let rapido: Local[] = [];
+  const photon = buscarPhoton(texto, sinal).then((r) => {
+    rapido = r;
+    if (r.length && !sinal?.aborted) parcial?.(juntar([r]));
+    return r;
+  });
+  const nominatim = buscarNominatim(texto, sinal);
+  const [a, b] = await Promise.allSettled([photon, nominatim]);
+  if (sinal?.aborted) return [];
+  if (a.status === "rejected" && b.status === "rejected") throw new Error("Busca indisponível");
+  const final = juntar([a.status === "fulfilled" ? a.value : rapido, b.status === "fulfilled" ? b.value : []]);
+  cache.set(chave, final);
+  return final;
 }
 
 /** Nome legivel para uma coordenada (ex.: localizacao atual). */

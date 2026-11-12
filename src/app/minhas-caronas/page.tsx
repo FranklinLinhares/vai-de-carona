@@ -89,7 +89,7 @@ function Lista() {
 
   async function compartilhar(i: Item) {
     const texto =
-      `Estou indo de carona pelo Vai de carona.\n` +
+      `Estou indo de carona pelo Cadê a carona.\n` +
       `Motorista: ${i.motorista.nome}\nCarro: ${i.motorista.carro_modelo} ${i.motorista.carro_cor}, placa ${i.motorista.carro_placa}\n` +
       `Embarque às ${formatarHora(i.embarque_previsto)}: ${linkMapa(i.embarque_lat, i.embarque_lng)}\n` +
       `Desembarque: ${linkMapa(i.desembarque_lat, i.desembarque_lng)}`;

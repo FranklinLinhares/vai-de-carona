@@ -11,7 +11,7 @@ export default function Inicio() {
     <div className="p-4">
       <header className="rounded-3xl bg-gradient-to-br from-teal-700 to-teal-900 p-6 text-white">
         <p className="text-sm opacity-80">{CIDADE.nome}</p>
-        <h1 className="text-3xl font-bold">Vai de carona</h1>
+        <h1 className="text-3xl font-bold">Cadê a carona</h1>
         <p className="mt-2 opacity-90">
           {perfil ? `Olá, ${perfil.nome.split(" ")[0]}! ` : ""}Carona na rota de quem já está indo, por{" "}
           <strong>{formatarReais(REGRAS.tarifa)}</strong>, o preço do ônibus.

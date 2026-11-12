@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Vai de carona",
-    short_name: "Vai de carona",
+    name: "Cadê a carona",
+    short_name: "Cadê a carona",
     description: "Carona na rota de quem já está indo, pelo preço do ônibus.",
     start_url: "/",
     display: "standalone",

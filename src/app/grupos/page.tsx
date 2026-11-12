@@ -69,10 +69,10 @@ function Grupos() {
   }
 
   async function convidar(g: Grupo) {
-    const texto = `Entre no grupo "${g.nome}" no Vai de carona para dividir caronas com a gente. Código: ${g.codigo}\n${location.origin}/grupos`;
+    const texto = `Entre no grupo "${g.nome}" no Cadê a carona para dividir caronas com a gente. Código: ${g.codigo}\n${location.origin}/grupos`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Vai de carona", text: texto });
+        await navigator.share({ title: "Cadê a carona", text: texto });
       } catch {
         /* fechou */
       }

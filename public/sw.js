@@ -1,4 +1,4 @@
-// Service worker do Vai de carona: mostra avisos com o app fechado.
+// Service worker do Cadê a carona: mostra avisos com o app fechado.
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 
@@ -7,10 +7,10 @@ self.addEventListener("push", (e) => {
   try {
     d = e.data ? e.data.json() : {};
   } catch {
-    d = { titulo: "Vai de carona", texto: e.data ? e.data.text() : "" };
+    d = { titulo: "Cadê a carona", texto: e.data ? e.data.text() : "" };
   }
   e.waitUntil(
-    self.registration.showNotification(d.titulo || "Vai de carona", {
+    self.registration.showNotification(d.titulo || "Cadê a carona", {
       body: d.texto || "",
       icon: "/icone-192.png",
       badge: "/icone-192.png",

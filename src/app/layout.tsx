@@ -8,9 +8,9 @@ import Notificacoes from "@/components/Notificacoes";
 const inter = Inter({ variable: "--font-sans", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Vai de carona",
+  title: "Cadê a carona",
   description: "Carona na rota de quem já está indo, pelo preço do ônibus.",
-  appleWebApp: { capable: true, title: "Vai de carona", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Cadê a carona", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = { themeColor: "#0f766e", width: "device-width", initialScale: 1 };

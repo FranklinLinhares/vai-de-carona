@@ -1,4 +1,4 @@
-# Vai de carona
+# Cadê a carona
 
 Carona urbana que funciona como linha de ônibus, começando por João Pessoa. O motorista publica a rota que já vai fazer, e o passageiro embarca num ponto dessa rota (uma rua ou parada de ônibus) pagando o preço da passagem.
 

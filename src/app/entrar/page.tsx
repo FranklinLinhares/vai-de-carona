@@ -32,6 +32,17 @@ export default function Entrar() {
     router.push("/");
   }
 
+  async function esqueci() {
+    setErro("");
+    setAviso("");
+    if (!email.trim()) return setErro("Digite seu e-mail acima e toque de novo em “Esqueci minha senha”.");
+    setOcupado(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${location.origin}/nova-senha` });
+    setOcupado(false);
+    if (error) return setErro(traduzir(error));
+    setAviso("Enviamos um link para o seu e-mail. Abra-o neste celular para criar uma nova senha.");
+  }
+
   if (!supabaseConfigurado) return <p className="p-6">Configure o Supabase no arquivo .env.local.</p>;
 
   return (
@@ -62,6 +73,11 @@ export default function Entrar() {
           {ocupado ? "Aguarde…" : modo === "cadastrar" ? "Criar conta" : "Entrar"}
         </button>
       </form>
+      {modo === "entrar" && (
+        <button type="button" className="mt-3 w-full text-center text-sm text-teal-700 underline" onClick={esqueci} disabled={ocupado}>
+          Esqueci minha senha
+        </button>
+      )}
       {erro && <p className="mt-3 text-sm text-red-600">{erro}</p>}
       {aviso && <p className="mt-3 text-sm text-amber-700">{aviso}</p>}
     </div>

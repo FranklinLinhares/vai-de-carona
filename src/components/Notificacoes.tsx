@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSessao } from "./Sessao";
 import { supabase } from "@/lib/supabase";
+import { ativarAvisos, renovarAvisos } from "@/lib/push";
 
 type Notificacao = { id: string; titulo: string; texto: string; link: string | null; lida: boolean; criado_em: string };
 
@@ -25,6 +26,11 @@ export default function Notificacoes() {
     setPermissao(typeof Notification === "undefined" ? "indisponivel" : Notification.permission);
   }, []);
 
+  // aparelho ja autorizado: mantem registrado para avisos com o app fechado
+  useEffect(() => {
+    if (perfil) renovarAvisos(perfil.id).catch(() => {});
+  }, [perfil]);
+
   useEffect(() => {
     if (!perfil) return;
     carregar();
@@ -33,7 +39,8 @@ export default function Notificacoes() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notificacoes", filter: `usuario_id=eq.${perfil.id}` }, (e) => {
         const n = e.new as Notificacao;
         setLista((l) => [n, ...l]);
-        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        const temPush = typeof navigator !== "undefined" && "serviceWorker" in navigator && "PushManager" in window;
+        if (!temPush && typeof Notification !== "undefined" && Notification.permission === "granted") {
           try {
             const sistema = new Notification(n.titulo, { body: n.texto, icon: "/icone-192.png", tag: n.id });
             sistema.onclick = () => {
@@ -89,7 +96,10 @@ export default function Notificacoes() {
           {permissao === "default" && (
             <button
               className="block w-full bg-teal-50 p-3 text-left text-sm text-teal-800"
-              onClick={async () => setPermissao(await Notification.requestPermission())}
+              onClick={async () => {
+                await ativarAvisos(perfil.id).catch(() => {});
+                setPermissao(Notification.permission);
+              }}
             >
               Ativar avisos no celular
             </button>

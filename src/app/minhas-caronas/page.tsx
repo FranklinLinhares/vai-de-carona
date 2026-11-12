@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Protegido from "@/components/Protegido";
 import PlanoViagem from "@/components/PlanoViagem";
+import AtivarAvisos from "@/components/AtivarAvisos";
 import { Avaliar, Nota } from "@/components/Estrelas";
 import { useSessao } from "@/components/Sessao";
 import { supabase, mensagemErro, COLUNAS_PUBLICAS_PERFIL, type ReservaDetalhe, type ViagemDetalhe, type Perfil } from "@/lib/supabase";
@@ -121,6 +122,7 @@ function Lista() {
   return (
     <div className="space-y-4 p-4">
       <h1 className="text-2xl font-bold">Minhas caronas</h1>
+      <AtivarAvisos motivo="quando o motorista aceitar, mandar mensagem e sair para buscar você" />
       {erro && <p className="text-sm text-red-600">{erro}</p>}
       {carregando && <p className="text-slate-500">Carregando…</p>}
       {!carregando && itens.length === 0 && (

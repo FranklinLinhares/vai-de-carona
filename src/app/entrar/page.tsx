@@ -68,13 +68,19 @@ export default function Entrar() {
 
       <div className="relative -mt-12 space-y-4 px-4">
         <div className="cartao space-y-4 p-5 shadow-xl">
-          <div className="grid grid-cols-2 rounded-xl bg-[var(--fundo)] p-1 text-sm font-semibold">
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-[var(--mar-claro)] p-1 text-sm font-bold">
             {(["cadastrar", "entrar"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => { setModo(m); setErro(""); setAviso(""); }}
-                className={`rounded-lg py-2.5 transition ${modo === m ? "bg-white text-[var(--mar)] shadow-sm" : "text-[var(--cinza)]"}`}
+                className={`rounded-lg py-2.5 transition ${
+                  modo === m
+                    ? m === "cadastrar"
+                      ? "bg-[var(--sol)] text-[var(--tinta)] shadow-sm"
+                      : "bg-[var(--mar)] text-white shadow-sm"
+                    : "text-[var(--mar)] hover:bg-white/60"
+                }`}
               >
                 {m === "cadastrar" ? "Criar conta" : "Já tenho conta"}
               </button>

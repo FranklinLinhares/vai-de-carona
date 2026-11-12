@@ -1,4 +1,5 @@
 import { CIDADE, SERVICOS } from "./config";
+import { supabase } from "./supabase";
 
 export type Local = { nome: string; lat: number; lng: number };
 
@@ -62,6 +63,25 @@ function juntar(listas: Local[][]) {
 
 const cache = new Map<string, Local[]>();
 
+const TIPOS: Record<string, string> = {
+  restaurant: "Restaurante", fast_food: "Lanchonete", cafe: "Café", bar: "Bar", pharmacy: "Farmácia",
+  hospital: "Hospital", clinic: "Clínica", school: "Escola", university: "Universidade", college: "Faculdade",
+  bank: "Banco", fuel: "Posto", supermarket: "Supermercado", mall: "Shopping", place_of_worship: "Igreja",
+  bus_station: "Rodoviária", police: "Polícia", townhall: "Prefeitura", marketplace: "Mercado", bakery: "Padaria",
+  suburb: "Bairro", neighbourhood: "Bairro", quarter: "Bairro", platform: "Parada de ônibus", stop_position: "Parada de ônibus",
+  government: "Órgão público", public: "Órgão público", park: "Parque", hotel: "Hotel", parking: "Estacionamento",
+};
+
+/** Indice proprio no nosso banco (Sao Paulo): ruas, bairros, paradas e lugares de Joao Pessoa. Bem rapido. */
+async function buscarNoBanco(texto: string): Promise<Local[]> {
+  const { data, error } = await supabase.rpc("buscar_lugares", { p_texto: texto, p_limite: 8 });
+  if (error || !data) return [];
+  return (data as { nome: string; tipo: string; detalhe: string | null; lat: number; lng: number }[]).map((l) => {
+    const rotulo = l.tipo === "rua" ? "Rua" : l.tipo === "parada" ? "Parada de ônibus" : l.tipo === "bairro" ? "Bairro" : TIPOS[l.detalhe ?? ""];
+    return { nome: rotulo && !l.nome.toLowerCase().startsWith(rotulo.toLowerCase()) && l.tipo !== "rua" ? `${l.nome} · ${rotulo}` : l.nome, lat: l.lat, lng: l.lng };
+  });
+}
+
 /**
  * Busca enderecos e lugares dentro de Joao Pessoa.
  * Mostra logo o resultado do Photon (rapido) e completa com o Nominatim quando ele responder.
@@ -75,17 +95,33 @@ export async function buscarEndereco(
   const guardado = cache.get(chave);
   if (guardado) return guardado;
   const { sinal, parcial } = opcoes;
+  // 1) nosso banco responde primeiro; 2) Photon e Nominatim completam (enderecos com numero, lugares novos)
+  let banco: Local[] = [];
   let rapido: Local[] = [];
-  const photon = buscarPhoton(texto, sinal).then((r) => {
-    rapido = r;
-    if (r.length && !sinal?.aborted) parcial?.(juntar([r]));
+  const mostrar = () => !sinal?.aborted && parcial?.(juntar([banco, rapido]));
+  const local = buscarNoBanco(texto).then((r) => {
+    banco = r;
+    if (r.length) mostrar();
     return r;
   });
-  const nominatim = buscarNominatim(texto, sinal);
-  const [a, b] = await Promise.allSettled([photon, nominatim]);
+  const photon = buscarPhoton(texto, sinal).then((r) => {
+    rapido = r;
+    if (r.length) mostrar();
+    return r;
+  });
+  // so incomoda o Nominatim (lento) quando o nosso banco achou pouco ou quando parece endereco com numero
+  const precisaNominatim = async () => {
+    const r = await local.catch(() => []);
+    return r.length < 3 || /\d/.test(texto) ? buscarNominatim(texto, sinal) : [];
+  };
+  const [x, a, b] = await Promise.allSettled([local, photon, precisaNominatim()]);
   if (sinal?.aborted) return [];
-  if (a.status === "rejected" && b.status === "rejected") throw new Error("Busca indisponível");
-  const final = juntar([a.status === "fulfilled" ? a.value : rapido, b.status === "fulfilled" ? b.value : []]);
+  if (x.status === "rejected" && a.status === "rejected" && b.status === "rejected") throw new Error("Busca indisponível");
+  const final = juntar([
+    x.status === "fulfilled" ? x.value : [],
+    a.status === "fulfilled" ? a.value : rapido,
+    b.status === "fulfilled" ? b.value : [],
+  ]);
   cache.set(chave, final);
   return final;
 }

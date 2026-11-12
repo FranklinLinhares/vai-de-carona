@@ -53,7 +53,7 @@ export default function BuscaLocal({
       } finally {
         if (!controle.signal.aborted) setCarregando(false);
       }
-    }, 350);
+    }, 250);
   }
 
   function usarLocalizacao() {

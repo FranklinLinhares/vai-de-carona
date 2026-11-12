@@ -6,6 +6,7 @@ import Protegido from "@/components/Protegido";
 import Mapa from "@/components/Mapa";
 import CompartilharPosicao from "@/components/CompartilharPosicao";
 import AtivarAvisos from "@/components/AtivarAvisos";
+import ProcurasNoMapa from "@/components/ProcurasNoMapa";
 import { Avaliar, Nota } from "@/components/Estrelas";
 import { useSessao } from "@/components/Sessao";
 import { supabase, mensagemErro, COLUNAS_PUBLICAS_PERFIL, type ViagemDetalhe, type ReservaDetalhe, type Perfil } from "@/lib/supabase";
@@ -103,6 +104,10 @@ function Lista() {
       </div>
       <AtivarAvisos motivo="na hora que um passageiro pedir carona" />
       {erro && <p className="text-sm text-red-600">{erro}</p>}
+      {(() => {
+        const proxima = [...viagens].reverse().find((v) => v.status === "aberta" || v.status === "em_andamento");
+        return <ProcurasNoMapa viagemId={proxima?.id} rota={proxima?.rota_geojson.coordinates} />;
+      })()}
       {series.length > 0 && (
         <section className="cartao space-y-2">
           <h2 className="font-semibold">🔁 Caronas recorrentes</h2>

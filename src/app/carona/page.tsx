@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Protegido from "@/components/Protegido";
 import BuscaLocal from "@/components/BuscaLocal";
-import Mapa from "@/components/Mapa";
+import MapaCaronas, { motivo, type CaronaNoMapa } from "@/components/MapaCaronas";
 import PlanoViagem from "@/components/PlanoViagem";
 import { Nota } from "@/components/Estrelas";
 import { supabase, mensagemErro, type Resultado, type ViagemDetalhe } from "@/lib/supabase";
@@ -48,6 +48,7 @@ function Busca() {
   const [marcando, setMarcando] = useState<Modo | null>(null);
   const [meusGrupos, setMeusGrupos] = useState<{ id: string; nome: string }[]>([]);
   const [filtroGrupo, setFiltroGrupo] = useState("");
+  const [carros, setCarros] = useState<CaronaNoMapa[]>([]);
 
   useEffect(() => {
     supabase.from("grupos").select("id,nome").order("nome").then(({ data }) => setMeusGrupos(data ?? []));
@@ -67,6 +68,8 @@ function Busca() {
     setOcupado(true);
     setErro("");
     setAberto(null);
+    // avisa os motoristas que tem gente querendo ir por aqui (ponto aproximado, sem nome)
+    supabase.rpc("registrar_procura", { origem_lng: origem.lng, origem_lat: origem.lat, destino_lng: destino.lng, destino_lat: destino.lat }).then(() => {});
     const { data, error } = await supabase.rpc("buscar_viagens", {
       origem_lng: origem.lng,
       origem_lat: origem.lat,
@@ -172,15 +175,8 @@ function Busca() {
         <BuscaLocal rotulo="Estou em" valor={origem} permitirLocalizacao onEscolher={setOrigem} />
         <BuscaLocal rotulo="Quero ir para" valor={destino} onEscolher={setDestino} />
         <MarcarNoMapa marcando={marcando} onMudar={setMarcando} rotulos={{ origem: "Onde estou", destino: "Destino" }} />
-        {(marcando || (!resultados && (origem || destino))) && (
-          <Mapa
-            altura={240}
-            onClique={tocarMapa}
-            marcadores={[
-              ...(origem ? [{ ...origem, cor: "#64748b", rotulo: "Você" }] : []),
-              ...(destino ? [{ ...destino, cor: "#b91c1c", rotulo: "Destino" }] : []),
-            ]}
-          />
+        {(marcando || !resultados?.length) && (
+          <MapaCaronas altura={260} horas={janela} origem={origem} destino={destino} onCarregar={setCarros} onClique={tocarMapa} />
         )}
         <div>
           <label className="mb-1 block text-sm font-medium">Saindo nas próximas</label>
@@ -216,8 +212,25 @@ function Busca() {
       {erro && <p className="text-sm text-red-600">{erro}</p>}
 
       {resultados && resultados.length === 0 && (
-        <div className="cartao text-center text-slate-600">
-          Nenhuma rota passa a até {REGRAS.raioCaminhadaM} m de você nesse horário. Tente um período maior.
+        <div className="cartao space-y-2 text-slate-600">
+          <p className="text-center">
+            Nenhuma carona passa a até {REGRAS.raioCaminhadaM} m de você e do seu destino nas próximas {janela} h.
+          </p>
+          {carros.length > 0 && (
+            <>
+              <p className="text-sm font-medium text-[var(--tinta)]">Caronas no mapa que não servem para este trajeto:</p>
+              <ul className="space-y-1 text-sm">
+                {carros.map((c) => (
+                  <li key={c.viagem_id}>
+                    🚗 <strong>{c.motorista_nome}</strong>, às {formatarHora(c.partida_em)}, {c.origem_nome} → {c.destino_nome}:{" "}
+                    {motivo(c) ?? "não aparece por filtro (grupo, só mulheres ou já pedida)"}.
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs">Dica: marque no mapa um ponto mais perto da linha verde do motorista.</p>
+            </>
+          )}
+          {carros.length === 0 && <p className="text-center text-sm">Tente um período maior.</p>}
         </div>
       )}
 

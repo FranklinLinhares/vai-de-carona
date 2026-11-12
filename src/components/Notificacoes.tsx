@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSessao } from "./Sessao";
 import { supabase } from "@/lib/supabase";
@@ -15,6 +15,7 @@ export default function Notificacoes() {
   const router = useRouter();
   const [lista, setLista] = useState<Notificacao[]>([]);
   const [aberto, setAberto] = useState(false);
+  const caixa = useRef<HTMLDivElement>(null);
   const [permissao, setPermissao] = useState<NotificationPermission | "indisponivel">("default");
 
   const carregar = useCallback(async () => {
@@ -22,6 +23,21 @@ export default function Notificacoes() {
     const { data } = await supabase.from("notificacoes").select("*").order("criado_em", { ascending: false }).limit(20);
     setLista((data as Notificacao[]) ?? []);
   }, [perfil]);
+
+  // fecha ao tocar fora do quadro ou apertar Esc
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: PointerEvent) => {
+      if (caixa.current && !caixa.current.contains(e.target as Node)) setAberto(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setAberto(false);
+    document.addEventListener("pointerdown", fora);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", fora);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [aberto]);
 
   useEffect(() => {
     setPermissao(typeof Notification === "undefined" ? "indisponivel" : Notification.permission);
@@ -77,7 +93,7 @@ export default function Notificacoes() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={caixa}>
       <button
         onClick={() => setAberto(!aberto)}
         className="relative flex h-10 w-10 items-center justify-center rounded-full text-[var(--tinta)] hover:bg-slate-100"

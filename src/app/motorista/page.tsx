@@ -173,7 +173,7 @@ function Lista() {
                       </div>
                       <Link href={`/chat/${r.id}`} className="botao-secundario">💬 Chat</Link>
                     </div>
-                    {r.aprovacao === "pendente" && v.status === "aberta" && (
+                    {r.aprovacao === "pendente" && (v.status === "aberta" || v.status === "em_andamento") && (
                       <div className="flex gap-2">
                         <button className="botao flex-1 py-1.5 text-sm" onClick={() => responder(r.id, true)}>Aceitar</button>
                         <button className="botao-secundario flex-1" onClick={() => responder(r.id, false)}>Recusar</button>

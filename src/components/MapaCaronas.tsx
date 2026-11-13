@@ -36,7 +36,6 @@ export function motivo(c: CaronaNoMapa): string | null {
   if (c.dist_destino_m > r) return `passa a ${km(c.dist_destino_m)} do seu destino (o limite é ${r} m)`;
   if (c.mesmo_sentido === false) return "vai no sentido contrário ao seu";
   if (c.vagas_livres <= 0) return "está lotada";
-  if (c.status === "em_andamento") return "já saiu";
   return null;
 }
 

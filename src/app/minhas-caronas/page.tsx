@@ -27,6 +27,7 @@ function Lista() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const [copiado, setCopiado] = useState("");
+  const [mapaEscolhido, setMapaEscolhido] = useState<string | null>(null); // so um mapa por vez
   const [posicoes, setPosicoes] = useState<Record<string, { lat: number; lng: number; atualizado_em: string }>>({});
 
   const carregar = useCallback(async () => {
@@ -119,6 +120,13 @@ function Lista() {
     return { texto: "Confirmada", cor: "bg-amber-100 text-amber-800" };
   };
 
+  // mapa aberto: o que voce escolheu; senao a viagem em andamento; senao a proxima carona
+  const comMapa = itens.filter((i) => i.status === "confirmada" && i.aprovacao !== "recusada");
+  const proxima =
+    comMapa.find((i) => i.viagem.status === "em_andamento") ??
+    [...comMapa].reverse().find((i) => new Date(i.embarque_previsto).getTime() > Date.now() - 3600000);
+  const mapaAberto = mapaEscolhido ?? proxima?.id ?? null;
+
   return (
     <div className="space-y-4 p-4">
       <h1 className="titulo-pagina">Minhas caronas</h1>
@@ -160,7 +168,12 @@ function Lista() {
               )}
             </div>
 
-            {(ativa || pendente) && (
+            {(ativa || pendente) && mapaAberto !== i.id && (
+              <button className="botao-secundario w-full" onClick={() => setMapaEscolhido(i.id)}>
+                🗺️ Ver no mapa onde embarcar e descer
+              </button>
+            )}
+            {(ativa || pendente) && mapaAberto === i.id && (
               <PlanoViagem
                 altura={240}
                 rota={i.viagem.rota_geojson.coordinates}
